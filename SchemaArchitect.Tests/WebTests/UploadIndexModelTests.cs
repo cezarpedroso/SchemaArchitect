@@ -33,7 +33,7 @@ public sealed class UploadIndexModelTests
     [Fact]
     public async Task OnPostAsync_WhenWrongExtension_ReturnsPageWithModelError()
     {
-        var resolver = new FakeResolver(new FakeParser(new DatabaseSchema { Tables = [ new Table { Name = "T" } ] }));
+        var resolver = new FakeResolver(new FakeParser(new DatabaseSchema { Tables = new[] { new TableSchema { Name = "T" } } }));
         var store = new InMemoryGenerationSessionStore();
         var model = new IndexModel(resolver, store);
 
@@ -81,7 +81,7 @@ public sealed class UploadIndexModelTests
     [Fact]
     public async Task OnPostAsync_WhenValidSchema_RedirectsToPreview()
     {
-        var schema = new DatabaseSchema { Tables = [ new Table { Name = "Customers" } ] };
+        var schema = new DatabaseSchema { Tables = new[] { new TableSchema { Name = "Customers" } } };
         var resolver = new FakeResolver(new FakeParser(schema));
         var store = new InMemoryGenerationSessionStore();
         var model = new IndexModel(resolver, store);
