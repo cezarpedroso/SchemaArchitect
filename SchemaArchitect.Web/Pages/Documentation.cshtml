@@ -1,0 +1,206 @@
+@page
+@{
+    ViewData["Title"] = "Documentation";
+}
+
+<section class="docs-page" aria-labelledby="documentationTitle">
+    <header class="docs-header">
+        <span class="section-eyebrow">Documentation</span>
+        <h1 id="documentationTitle">Schema Architect docs</h1>
+        <p>
+            Practical guidance for uploading SQL DDL, reviewing the detected schema, and generating
+            EF Core-ready project files.
+        </p>
+    </header>
+
+    <div class="docs-layout">
+        <aside class="docs-sidebar" aria-label="Documentation navigation">
+            <nav>
+                <a href="#getting-started">Getting Started</a>
+                <a href="#supported-sql-dialects">Supported SQL Dialects</a>
+                <a href="#generated-output">Generated Output</a>
+                <a href="#generation-templates">Generation Templates</a>
+                <a href="#interactive-schema-explorer">Interactive Schema Explorer</a>
+                <a href="#schema-health">Schema Health</a>
+                <a href="#privacy">Privacy</a>
+                <a href="#requirements">Requirements</a>
+                <a href="#faq">FAQ</a>
+            </nav>
+        </aside>
+
+        <div class="docs-content">
+            <section id="getting-started" class="docs-section">
+                <h2>Getting Started</h2>
+                <p>
+                    Schema Architect turns a static SQL schema file into reviewable EF Core starter code.
+                    The workflow is intentionally short:
+                </p>
+                <ol>
+                    <li>Select the SQL dialect.</li>
+                    <li>Upload a SQL DDL file.</li>
+                    <li>Review the detected schema.</li>
+                    <li>Configure generation settings.</li>
+                    <li>Preview generated code.</li>
+                    <li>Download the generated project.</li>
+                </ol>
+            </section>
+
+            <section id="supported-sql-dialects" class="docs-section">
+                <h2>Supported SQL Dialects</h2>
+                <p>
+                    Schema Architect parses SQL DDL and currently focuses on CREATE TABLE statements,
+                    keys, constraints, indexes, and relationships.
+                </p>
+                <ul class="docs-inline-list">
+                    <li>SQL Server</li>
+                    <li>PostgreSQL</li>
+                    <li>MySQL</li>
+                    <li>SQLite</li>
+                    <li>Oracle</li>
+                    <li>IBM Db2</li>
+                </ul>
+            </section>
+
+            <section id="generated-output" class="docs-section">
+                <h2>Generated Output</h2>
+                <p>
+                    The default Standard EF Core template generates a clean project-style folder structure:
+                </p>
+                <pre class="docs-code"><code>Domain/
+├── Entities/
+
+Infrastructure/
+├── Data/
+├── Configurations/
+
+Application/
+├── DTOs/
+
+API/
+├── Controllers/
+
+README_MIGRATIONS.md</code></pre>
+                <p>Generated files may include:</p>
+                <ul>
+                    <li>Entities</li>
+                    <li>DbContext</li>
+                    <li>Fluent API Configurations</li>
+                    <li>DTOs</li>
+                    <li>Controllers</li>
+                    <li>Migration Instructions</li>
+                </ul>
+            </section>
+
+            <section id="generation-templates" class="docs-section">
+                <h2>Generation Templates</h2>
+                <p>
+                    Templates define the generated architecture, folder structure, namespaces, and API style.
+                    Output checkboxes still control which artifacts are included inside the selected template.
+                </p>
+                <dl class="docs-definition-list">
+                    <div>
+                        <dt>Standard EF Core</dt>
+                        <dd>Best for straightforward EF Core projects or when you want the current default Schema Architect structure.</dd>
+                    </div>
+                    <div>
+                        <dt>Clean Architecture</dt>
+                        <dd>Best when you want Domain, Application, Infrastructure, and API boundaries from the beginning.</dd>
+                    </div>
+                    <div>
+                        <dt>DDD</dt>
+                        <dd>Best when the generated model should start from aggregate-oriented domain folders and persistence isolation.</dd>
+                    </div>
+                    <div>
+                        <dt>Minimal API</dt>
+                        <dd>Best for lightweight ASP.NET Core APIs that prefer endpoint mapping classes over controllers.</dd>
+                    </div>
+                    <div>
+                        <dt>MVC API</dt>
+                        <dd>Best for traditional controller-based Web API projects with familiar routing and controller actions.</dd>
+                    </div>
+                </dl>
+            </section>
+
+            <section id="interactive-schema-explorer" class="docs-section">
+                <h2>Interactive Schema Explorer</h2>
+                <p>
+                    After parsing, the explorer lets you inspect the schema before code generation. You can:
+                </p>
+                <ul>
+                    <li>Browse schemas and tables</li>
+                    <li>Inspect columns</li>
+                    <li>View relationships</li>
+                    <li>Review indexes</li>
+                    <li>Preview generated entities</li>
+                    <li>Review schema health</li>
+                </ul>
+            </section>
+
+            <section id="schema-health" class="docs-section">
+                <h2>Schema Health</h2>
+                <p>
+                    Schema Architect performs static analysis and reports potential schema issues before generation.
+                    Warnings are informational and do not necessarily prevent generation.
+                </p>
+                <ul>
+                    <li>Missing primary keys</li>
+                    <li>Nullable foreign keys</li>
+                    <li>Identity columns</li>
+                    <li>Relationship validation</li>
+                    <li>General generation readiness</li>
+                </ul>
+            </section>
+
+            <section id="privacy" class="docs-section">
+                <h2>Privacy</h2>
+                <p>
+                    Schema Architect performs static analysis only. It does not need a live database.
+                </p>
+                <ul>
+                    <li>No database connection is required.</li>
+                    <li>No connection strings are requested.</li>
+                    <li>No credentials are stored.</li>
+                    <li>Uploaded SQL schema files are processed only for code generation.</li>
+                    <li>Schema Architect performs static analysis only.</li>
+                </ul>
+            </section>
+
+            <section id="requirements" class="docs-section">
+                <h2>Requirements</h2>
+                <ul>
+                    <li>SQL DDL files are required.</li>
+                    <li>CREATE TABLE statements are supported.</li>
+                    <li>Maximum upload size is 5 MB.</li>
+                    <li>Modern browsers are recommended.</li>
+                </ul>
+            </section>
+
+            <section id="faq" class="docs-section">
+                <h2>Frequently Asked Questions</h2>
+                <dl class="docs-faq">
+                    <div>
+                        <dt>Does Schema Architect connect to my database?</dt>
+                        <dd>No. Schema Architect analyzes static SQL DDL files only.</dd>
+                    </div>
+                    <div>
+                        <dt>Which SQL dialects are supported?</dt>
+                        <dd>SQL Server, PostgreSQL, MySQL, SQLite, Oracle, and IBM Db2.</dd>
+                    </div>
+                    <div>
+                        <dt>Can I edit the generated code?</dt>
+                        <dd>Yes. Generated files can be edited in the browser before exporting the ZIP.</dd>
+                    </div>
+                    <div>
+                        <dt>Which .NET versions are supported?</dt>
+                        <dd>Schema Architect is designed around modern .NET 9/10 conventions and EF Core-ready C# output.</dd>
+                    </div>
+                    <div>
+                        <dt>Is Schema Architect free?</dt>
+                        <dd>Yes. Schema Architect is available on GitHub under the MIT License.</dd>
+                    </div>
+                </dl>
+            </section>
+
+        </div>
+    </div>
+</section>

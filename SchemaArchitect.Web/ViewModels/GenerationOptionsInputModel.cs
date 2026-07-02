@@ -25,6 +25,11 @@ public sealed class GenerationOptionsInputModel
     public string DbContextName { get; set; } = "ApplicationDbContext";
 
     /// <summary>
+    /// Gets or sets the selected generation template.
+    /// </summary>
+    public GenerationTemplate Template { get; set; } = GenerationTemplate.StandardEfCore;
+
+    /// <summary>
     /// Gets or sets a value indicating whether entities should be generated.
     /// </summary>
     public bool GenerateEntities { get; set; } = true;
@@ -64,6 +69,7 @@ public sealed class GenerationOptionsInputModel
         {
             RootNamespace = RootNamespace,
             DbContextName = DbContextName,
+            Template = Template,
             GenerateEntities = GenerateEntities,
             GenerateDbContext = GenerateDbContext,
             GenerateConfigurations = GenerateConfigurations,
@@ -86,6 +92,7 @@ public sealed class GenerationOptionsInputModel
         {
             RootNamespace = options.RootNamespace,
             DbContextName = options.DbContextName,
+            Template = options.Template,
             GenerateEntities = options.GenerateEntities,
             GenerateDbContext = options.GenerateDbContext,
             GenerateConfigurations = options.GenerateConfigurations,

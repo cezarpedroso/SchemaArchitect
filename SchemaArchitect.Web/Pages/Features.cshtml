@@ -1,62 +1,106 @@
-﻿@page
+@page
 @{
     ViewData["Title"] = "Features";
 }
 
-<section class="hero-panel hero-shell mb-5">
-    <div class="row align-items-center g-4">
-        <div class="col-lg-8">
-            <span class="section-eyebrow">Features</span>
-            <h1 class="display-6 fw-semibold mt-3">A focused workflow for turning SQL DDL into EF Core starter code.</h1>
-            <p class="lead text-muted mb-0">
-                Schema Architect parses relational schema files, gives you a reviewable model,
-                then generates the C# layers most teams end up scaffolding by hand.
-            </p>
-        </div>
-    </div>
-</section>
-
-<section class="row g-4">
-    <div class="col-md-6 col-xl-3">
-        <div class="feature-tile">
-            <span class="section-eyebrow">Parse</span>
-            <h2 class="h5">Multi-dialect schema parsing</h2>
-            <p class="text-muted mb-0">
-                Reads tables, columns, keys, nullability, lengths, precision, scale, identity fields,
-                and relationships across the supported SQL dialects.
-            </p>
-        </div>
+<section class="features-walkthrough" aria-labelledby="featuresWalkthroughTitle">
+    <div class="features-walkthrough-intro">
+        <span class="section-eyebrow">Product walkthrough</span>
+        <h1 id="featuresWalkthroughTitle">See Schema Architect from upload to export.</h1>
+        <p class="text-muted">
+            A focused browser workflow for reviewing SQL DDL, understanding the detected model,
+            and generating EF Core-ready project files.
+        </p>
     </div>
 
-    <div class="col-md-6 col-xl-3">
-        <div class="feature-tile">
-            <span class="section-eyebrow">Model</span>
-            <h2 class="h5">Reviewable schema model</h2>
-            <p class="text-muted mb-0">
-                Inspect the detected structure before generation, with clear markers for required fields,
-                primary keys, identity columns, and foreign keys.
+    <article class="product-step">
+        <div class="product-step-copy">
+            <span class="product-step-number">01</span>
+            <h2>Upload your SQL schema</h2>
+            <p>
+                Select a supported SQL dialect, upload your DDL file, and Schema Architect automatically parses your database structure before generation.
             </p>
+            <ul class="product-highlights" aria-label="Schema upload highlights">
+                <li>Supported SQL dialects</li>
+                <li>Drag and drop upload</li>
+                <li>Automatic parsing</li>
+            </ul>
         </div>
-    </div>
+        <figure class="product-step-media">
+            <img src="~/images/featurespage/screenshot1.png" asp-append-version="true" alt="Schema Architect upload page with SQL dialect selection and file upload area" />
+        </figure>
+    </article>
 
-    <div class="col-md-6 col-xl-3">
-        <div class="feature-tile">
-            <span class="section-eyebrow">Generate</span>
-            <h2 class="h5">EF Core-oriented output</h2>
-            <p class="text-muted mb-0">
-                Generates entities, DbContext, Fluent API configurations, DTOs, controllers,
-                and migration notes in a clean project structure.
+    <article class="product-step product-step-reverse">
+        <div class="product-step-copy">
+            <span class="product-step-number">02</span>
+            <h2>Explore your database before generating code</h2>
+            <p>
+                Browse tables, inspect columns, relationships, indexes, generated entities, and configure the project without leaving the browser.
             </p>
+            <ul class="product-highlights" aria-label="Interactive schema explorer highlights">
+                <li>Tables</li>
+                <li>Columns</li>
+                <li>Relationships</li>
+                <li>Indexes</li>
+                <li>Generated previews</li>
+            </ul>
         </div>
-    </div>
+        <figure class="product-step-media">
+            <img src="~/images/featurespage/screenshot2.png" asp-append-version="true" alt="Interactive schema explorer showing detected tables, columns, and generation settings" />
+        </figure>
+    </article>
 
-    <div class="col-md-6 col-xl-3">
-        <div class="feature-tile">
-            <span class="section-eyebrow">Export</span>
-            <h2 class="h5">Preview and export</h2>
-            <p class="text-muted mb-0">
-                Browse generated files in the app and export the full output as a ZIP when you are ready to use it.
+    <article class="product-step">
+        <div class="product-step-copy">
+            <span class="product-step-number">03</span>
+            <h2>Understand relationships visually</h2>
+            <p>
+                Navigate parent and child tables through a lightweight relationship graph without opening a database management tool.
             </p>
+            <ul class="product-highlights" aria-label="Relationship visualization highlights">
+                <li>Parent/child visualization</li>
+                <li>Foreign key navigation</li>
+            </ul>
         </div>
-    </div>
+        <figure class="product-step-media">
+            <img src="~/images/featurespage/screenshot3.png" asp-append-version="true" alt="Relationship visualization connecting parent and child database tables" />
+        </figure>
+    </article>
+
+    <article class="product-step product-step-reverse">
+        <div class="product-step-copy">
+            <span class="product-step-number">04</span>
+            <h2>Validate your schema automatically</h2>
+            <p>
+                Detect nullable foreign keys, missing constraints, identity columns, and other potential issues before generating your project.
+            </p>
+            <ul class="product-highlights" aria-label="Schema health analysis highlights">
+                <li>Automatic validation</li>
+                <li>Warnings</li>
+                <li>Generation readiness</li>
+            </ul>
+        </div>
+        <figure class="product-step-media">
+            <img src="~/images/featurespage/screenshot4.png" asp-append-version="true" alt="Schema health report showing readiness, warnings, and detected schema details" />
+        </figure>
+    </article>
+
+    <article class="product-step">
+        <div class="product-step-copy">
+            <span class="product-step-number">05</span>
+            <h2>Preview and customize generated code</h2>
+            <p>
+                Review every generated file, inspect the project structure, make edits in the browser, and export a complete project when you're ready.
+            </p>
+            <ul class="product-highlights" aria-label="Generated code highlights">
+                <li>Editable preview</li>
+                <li>Project explorer</li>
+                <li>ZIP export</li>
+            </ul>
+        </div>
+        <figure class="product-step-media">
+            <img src="~/images/featurespage/screenshot5.png" asp-append-version="true" alt="Generated code preview with project file explorer and editable source output" />
+        </figure>
+    </article>
 </section>

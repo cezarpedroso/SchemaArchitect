@@ -63,9 +63,9 @@
                 </div>
             </div>
         </div>
-        <div class="col-xl-7 col-lg-6">
+        <div class="col-xl-7 col-lg-6 hero-demo-column">
             <video class="hero-demo-video" controls loop playsinline preload="auto" aria-label="Demo of Schema Architect parsing SQL and generating code">
-                <source src="@Url.Content("~/videos/schemaarchitect-demo.mp4")?v=20260702" type="video/mp4" />
+                <source src="@Url.Content("~/videos/demo-video.mp4")?v=20260702" type="video/mp4" />
                 Your browser does not support the video tag.
             </video>
         </div>
@@ -127,56 +127,9 @@
             }
         </section>
 
-        <section class="mb-5">
-            <div class="text-center mb-4">
-                <span class="section-eyebrow">Workflow</span>
-            </div>
-            <div class="row g-4">
-                <div class="col-md-4">
-                    <div class="workflow-card">
-                        <div class="workflow-icon">01</div>
-                        <h2 class="h5">Upload .sql</h2>
-                        <p class="text-muted mb-0">Drop in SQL DDL with tables, keys, constraints, and relationships.</p>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="workflow-card">
-                        <div class="workflow-icon">02</div>
-                        <h2 class="h5">Inspect schema</h2>
-                        <p class="text-muted mb-0">Review columns, nullability, primary keys, identity fields, and foreign keys.</p>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="workflow-card">
-                        <div class="workflow-icon">03</div>
-                        <h2 class="h5">Export code</h2>
-                        <p class="text-muted mb-0">Generate entities, DbContext, Fluent API, DTOs, controllers, and migration notes.</p>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <section id="features" class="row g-4">
-            <div class="col-lg-8">
-                <div class="capability-card h-100">
-                    <div class="card-body">
-                        <span class="section-eyebrow">Features</span>
-                        <h2 class="h4 mt-3">Production-oriented output without database connections.</h2>
-                        <p class="text-muted">
-                            Schema Architect focuses on safe static analysis of schema files and clean generated C# foundations.
-                        </p>
-                        <div class="code-pill">public DbSet&lt;Order&gt; Orders { get; set; }</div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-4">
-                <div class="capability-card h-100 text-center d-flex align-items-center justify-content-center">
-                    <div class="card-body">
-                        <div class="metric-display">.NET 9 / 10</div>
-                        <span class="section-eyebrow">Modern Runtime Ready</span>
-                    </div>
-                </div>
-            </div>
+        <section class="home-final-cta" aria-labelledby="homeFinalCtaTitle">
+            <h2 id="homeFinalCtaTitle">Ready to automate your backend?</h2>
+            <a asp-page="/Upload/Index" class="btn btn-primary home-final-cta-button">Upload Schema</a>
         </section>
     </div>
 </div>

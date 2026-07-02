@@ -53,7 +53,7 @@ Schema Architect automates the boring first pass so developers can start with cl
 
 ## Screenshots
 
-> Add screenshots before publishing the portfolio repo.
+> Add screenshots before publishing the public repository.
 
 - Home page: `docs/screenshots/home.png`
 - Upload page: `docs/screenshots/upload.png`
@@ -145,3 +145,7 @@ public class Customer
 - The SQL parser is focused on table-definition DDL and is not intended to replace a full database-specific SQL compiler.
 - Generated EF Core code assumes the target project has EF Core packages installed.
 - Uploaded schema and generated output are stored temporarily in memory.
+
+## License
+
+Schema Architect is released under the MIT License. See [LICENSE](LICENSE).

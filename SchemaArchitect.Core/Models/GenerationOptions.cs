@@ -16,6 +16,11 @@ public sealed record GenerationOptions
     public string DbContextName { get; init; } = "ApplicationDbContext";
 
     /// <summary>
+    /// Gets the high-level architecture template used to organize generated files.
+    /// </summary>
+    public GenerationTemplate Template { get; init; } = GenerationTemplate.StandardEfCore;
+
+    /// <summary>
     /// Gets a value indicating whether entity classes should be generated.
     /// </summary>
     public bool GenerateEntities { get; init; } = true;

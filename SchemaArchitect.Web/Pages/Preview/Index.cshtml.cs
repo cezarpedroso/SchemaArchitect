@@ -155,4 +155,64 @@ public sealed class IndexModel : PageModel
             Options.GenerateMigrationInstructions;
     }
 
+    /// <summary>
+    /// Estimates the number of files generated for the current schema and options.
+    /// </summary>
+    /// <returns>The estimated generated file count.</returns>
+    public int EstimateGeneratedFileCount()
+    {
+        if (Session is null)
+        {
+            return 0;
+        }
+
+        return EstimateGeneratedFileCount(Session.Schema.Tables.Count, Options);
+    }
+
+    private static int EstimateGeneratedFileCount(int tableCount, GenerationOptionsInputModel options)
+    {
+        var generateEntities = options.GenerateEntities ||
+            options.GenerateDbContext ||
+            options.GenerateConfigurations ||
+            options.GenerateControllers;
+        var generateDbContext = options.GenerateDbContext ||
+            options.GenerateControllers;
+        var generateDtos = options.GenerateDtos ||
+            options.GenerateControllers;
+
+        var count = 0;
+
+        if (generateEntities)
+        {
+            count += tableCount;
+        }
+
+        if (generateDbContext)
+        {
+            count++;
+        }
+
+        if (options.GenerateConfigurations)
+        {
+            count += tableCount;
+        }
+
+        if (generateDtos)
+        {
+            count += tableCount * 3;
+        }
+
+        if (options.GenerateControllers)
+        {
+            count += tableCount;
+        }
+
+        if (options.GenerateMigrationInstructions)
+        {
+            count++;
+        }
+
+        return count;
+    }
+
 }

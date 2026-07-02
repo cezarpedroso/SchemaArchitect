@@ -17,6 +17,9 @@
     var healthReport = Model.HealthReport;
     var totalWarnings = healthReport?.WarningCount ?? 0;
     var totalIssues = healthReport?.IssueCount ?? 0;
+    var generationTemplates = GenerationTemplateCatalog.GetTemplates();
+    var selectedTemplate = GenerationTemplateCatalog.GetTemplate(Model.Options.Template);
+    var estimatedFileCount = Model.EstimateGeneratedFileCount();
 
     <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
         <div>
@@ -433,49 +436,95 @@
                 <div class="card-body">
                     <h2 class="h4">Generation Settings</h2>
                     <p class="text-muted small">
-                        Choose the files Schema Architect should create from the parsed schema.
+                        Choose the architecture template and files Schema Architect should create.
                     </p>
 
-                    <form method="post" asp-page-handler="Generate">
+                    <form method="post" asp-page-handler="Generate" data-generation-form data-table-count="@session.Schema.Tables.Count">
                         <input type="hidden" asp-for="Id" />
                         <input type="hidden" asp-for="SelectedTableIndex" data-selected-table-input />
                         <div asp-validation-summary="All" class="text-danger"></div>
 
-                        <div class="mb-3">
+                        <div class="generation-settings-section">
+                            <span class="generation-settings-label">Project</span>
+
+                            <div class="mb-3">
                             <label asp-for="Options.RootNamespace" class="form-label">Root namespace</label>
                             <input asp-for="Options.RootNamespace" class="form-control" />
                             <span asp-validation-for="Options.RootNamespace" class="text-danger"></span>
-                        </div>
+                            </div>
 
-                        <div class="mb-3">
+                            <div class="mb-3">
                             <label asp-for="Options.DbContextName" class="form-label">DbContext name</label>
                             <input asp-for="Options.DbContextName" class="form-control" />
                             <span asp-validation-for="Options.DbContextName" class="text-danger"></span>
+                            </div>
+
+                            <div>
+                                <label asp-for="Options.Template" class="form-label">Generation template</label>
+                                <div class="template-select-shell">
+                                    <select asp-for="Options.Template" class="form-select template-select" data-template-select>
+                                        @foreach (var template in generationTemplates)
+                                        {
+                                            <option value="@template.Template"
+                                                    data-template-description="@template.Description"
+                                                    data-template-name="@template.DisplayName">
+                                                @template.DisplayName
+                                            </option>
+                                        }
+                                    </select>
+                                    <span class="template-select-chevron" aria-hidden="true">⌄</span>
+                                </div>
+                                <p class="template-description" data-template-description-output>
+                                    @selectedTemplate.Description
+                                </p>
+                            </div>
                         </div>
 
-                        <div class="form-check">
+                        <div class="generation-settings-section">
+                            <span class="generation-settings-label">Generate</span>
+
+                            <div class="form-check">
                             <input asp-for="Options.GenerateEntities" class="form-check-input" />
                             <label asp-for="Options.GenerateEntities" class="form-check-label">Entities</label>
-                        </div>
-                        <div class="form-check">
+                            </div>
+                            <div class="form-check">
                             <input asp-for="Options.GenerateDbContext" class="form-check-input" />
                             <label asp-for="Options.GenerateDbContext" class="form-check-label">DbContext</label>
-                        </div>
-                        <div class="form-check">
+                            </div>
+                            <div class="form-check">
                             <input asp-for="Options.GenerateConfigurations" class="form-check-input" />
                             <label asp-for="Options.GenerateConfigurations" class="form-check-label">Fluent API configurations</label>
-                        </div>
-                        <div class="form-check">
+                            </div>
+                            <div class="form-check">
                             <input asp-for="Options.GenerateDtos" class="form-check-input" />
                             <label asp-for="Options.GenerateDtos" class="form-check-label">DTOs</label>
-                        </div>
-                        <div class="form-check">
+                            </div>
+                            <div class="form-check">
                             <input asp-for="Options.GenerateControllers" class="form-check-input" />
                             <label asp-for="Options.GenerateControllers" class="form-check-label">Controllers</label>
-                        </div>
-                        <div class="form-check mb-3">
+                            </div>
+                            <div class="form-check">
                             <input asp-for="Options.GenerateMigrationInstructions" class="form-check-input" />
                             <label asp-for="Options.GenerateMigrationInstructions" class="form-check-label">Migration instructions</label>
+                            </div>
+                        </div>
+
+                        <div class="generation-settings-section estimated-output-section">
+                            <span class="generation-settings-label">Estimated Output</span>
+                            <dl class="estimated-output-list">
+                                <div>
+                                    <dt>Template</dt>
+                                    <dd data-template-name-output>@selectedTemplate.DisplayName</dd>
+                                </div>
+                                <div>
+                                    <dt>Files</dt>
+                                    <dd><span data-estimated-file-count>@estimatedFileCount</span> generated files</dd>
+                                </div>
+                                <div>
+                                    <dt>Status</dt>
+                                    <dd><span class="generation-status-ready">Ready</span></dd>
+                                </div>
+                            </dl>
                         </div>
 
                         <button type="submit" class="btn btn-primary btn-lg w-100 mt-3">Generate EF Core Code</button>
@@ -542,6 +591,61 @@
                         }
                     });
                 });
+            }
+
+            const generationForm = document.querySelector('[data-generation-form]');
+            if (generationForm) {
+                const tableCount = Number.parseInt(generationForm.dataset.tableCount ?? '0', 10) || 0;
+                const templateSelect = generationForm.querySelector('[data-template-select]');
+                const templateDescriptionOutput = generationForm.querySelector('[data-template-description-output]');
+                const templateNameOutput = generationForm.querySelector('[data-template-name-output]');
+                const estimatedFileCountOutput = generationForm.querySelector('[data-estimated-file-count]');
+
+                const isChecked = (name) => generationForm.querySelector(`[name="Options.${name}"]`)?.checked ?? false;
+
+                const estimateFiles = () => {
+                    const generateControllers = isChecked('GenerateControllers');
+                    const generateEntities = isChecked('GenerateEntities') ||
+                        isChecked('GenerateDbContext') ||
+                        isChecked('GenerateConfigurations') ||
+                        generateControllers;
+                    const generateDbContext = isChecked('GenerateDbContext') || generateControllers;
+                    const generateDtos = isChecked('GenerateDtos') || generateControllers;
+
+                    let count = 0;
+                    count += generateEntities ? tableCount : 0;
+                    count += generateDbContext ? 1 : 0;
+                    count += isChecked('GenerateConfigurations') ? tableCount : 0;
+                    count += generateDtos ? tableCount * 3 : 0;
+                    count += generateControllers ? tableCount : 0;
+                    count += isChecked('GenerateMigrationInstructions') ? 1 : 0;
+
+                    return count;
+                };
+
+                const updateGenerationSummary = () => {
+                    const selectedOption = templateSelect?.selectedOptions?.[0];
+                    if (selectedOption) {
+                        if (templateDescriptionOutput) {
+                            templateDescriptionOutput.textContent = selectedOption.dataset.templateDescription ?? '';
+                        }
+
+                        if (templateNameOutput) {
+                            templateNameOutput.textContent = selectedOption.dataset.templateName ?? selectedOption.textContent?.trim() ?? '';
+                        }
+                    }
+
+                    if (estimatedFileCountOutput) {
+                        estimatedFileCountOutput.textContent = estimateFiles().toString();
+                    }
+                };
+
+                templateSelect?.addEventListener('change', updateGenerationSummary);
+                generationForm.querySelectorAll('input[type="checkbox"]').forEach((checkbox) => {
+                    checkbox.addEventListener('change', updateGenerationSummary);
+                });
+
+                updateGenerationSummary();
             }
         })();
     </script>

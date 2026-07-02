@@ -22,6 +22,7 @@ public sealed class CSharpCodeGenerator : ICodeGenerator
         cancellationToken.ThrowIfCancellationRequested();
 
         var effectiveOptions = NormalizeOptions(options);
+        var template = GenerationTemplateCatalog.GetTemplate(effectiveOptions.Template);
         var model = BuildGenerationModel(schema);
         var files = new List<GeneratedFile>();
 
@@ -29,8 +30,8 @@ public sealed class CSharpCodeGenerator : ICodeGenerator
         {
             files.AddRange(model.Tables.Select(table => new GeneratedFile
             {
-                RelativePath = $"Domain/Entities/{table.EntityName}.cs",
-                Content = GenerateEntity(table, model, effectiveOptions),
+                RelativePath = CombinePath(template.EntityPath, $"{table.EntityName}.cs"),
+                Content = GenerateEntity(table, model, effectiveOptions, template),
             }));
         }
 
@@ -38,8 +39,8 @@ public sealed class CSharpCodeGenerator : ICodeGenerator
         {
             files.Add(new GeneratedFile
             {
-                RelativePath = $"Infrastructure/Data/{effectiveOptions.DbContextName}.cs",
-                Content = GenerateDbContext(model, effectiveOptions),
+                RelativePath = CombinePath(template.DbContextPath, $"{effectiveOptions.DbContextName}.cs"),
+                Content = GenerateDbContext(model, effectiveOptions, template),
             });
         }
 
@@ -47,8 +48,8 @@ public sealed class CSharpCodeGenerator : ICodeGenerator
         {
             files.AddRange(model.Tables.Select(table => new GeneratedFile
             {
-                RelativePath = $"Infrastructure/Configurations/{table.EntityName}Configuration.cs",
-                Content = GenerateConfiguration(table, model, effectiveOptions),
+                RelativePath = CombinePath(template.ConfigurationPath, $"{table.EntityName}Configuration.cs"),
+                Content = GenerateConfiguration(table, model, effectiveOptions, template),
             }));
         }
 
@@ -58,20 +59,20 @@ public sealed class CSharpCodeGenerator : ICodeGenerator
             {
                 files.Add(new GeneratedFile
                 {
-                    RelativePath = $"Application/DTOs/{table.EntityName}Dto.cs",
-                    Content = GenerateDto(table, effectiveOptions, $"{table.EntityName}Dto", table.Table.Columns),
+                    RelativePath = CombinePath(template.DtoPath, $"{table.EntityName}Dto.cs"),
+                    Content = GenerateDto(table, effectiveOptions, template, $"{table.EntityName}Dto", table.Table.Columns),
                 });
 
                 files.Add(new GeneratedFile
                 {
-                    RelativePath = $"Application/DTOs/Create{table.EntityName}Dto.cs",
-                    Content = GenerateDto(table, effectiveOptions, $"Create{table.EntityName}Dto", GetMutableDtoColumns(table)),
+                    RelativePath = CombinePath(template.DtoPath, $"Create{table.EntityName}Dto.cs"),
+                    Content = GenerateDto(table, effectiveOptions, template, $"Create{table.EntityName}Dto", GetMutableDtoColumns(table)),
                 });
 
                 files.Add(new GeneratedFile
                 {
-                    RelativePath = $"Application/DTOs/Update{table.EntityName}Dto.cs",
-                    Content = GenerateDto(table, effectiveOptions, $"Update{table.EntityName}Dto", GetMutableDtoColumns(table)),
+                    RelativePath = CombinePath(template.DtoPath, $"Update{table.EntityName}Dto.cs"),
+                    Content = GenerateDto(table, effectiveOptions, template, $"Update{table.EntityName}Dto", GetMutableDtoColumns(table)),
                 });
             }
         }
@@ -80,8 +81,12 @@ public sealed class CSharpCodeGenerator : ICodeGenerator
         {
             files.AddRange(model.Tables.Select(table => new GeneratedFile
             {
-                RelativePath = $"API/Controllers/{table.ControllerName}.cs",
-                Content = GenerateController(table, effectiveOptions),
+                RelativePath = CombinePath(
+                    template.ApiPath,
+                    template.GeneratesMinimalEndpoints ? $"{table.EntityName}Endpoints.cs" : $"{table.ControllerName}.cs"),
+                Content = template.GeneratesMinimalEndpoints
+                    ? GenerateEndpoint(table, effectiveOptions, template)
+                    : GenerateController(table, effectiveOptions, template),
             }));
         }
 
@@ -128,7 +133,8 @@ public sealed class CSharpCodeGenerator : ICodeGenerator
     private static string GenerateEntity(
         TableGenerationModel table,
         GenerationModel model,
-        GenerationOptions options)
+        GenerationOptions options,
+        GenerationTemplateDescriptor template)
     {
         var incomingRelationships = model.GetIncomingForeignKeys(table);
         var hasCollections = incomingRelationships.Count > 0;
@@ -150,7 +156,7 @@ public sealed class CSharpCodeGenerator : ICodeGenerator
             builder.AppendLine();
         }
 
-        builder.AppendLine($"namespace {options.RootNamespace}.Domain.Entities;");
+        builder.AppendLine($"namespace {GetNamespace(options, template.EntityNamespace)};");
         builder.AppendLine();
         builder.AppendLine($"public class {table.EntityName}");
         builder.AppendLine("{");
@@ -186,19 +192,22 @@ public sealed class CSharpCodeGenerator : ICodeGenerator
         return builder.ToString();
     }
 
-    private static string GenerateDbContext(GenerationModel model, GenerationOptions options)
+    private static string GenerateDbContext(
+        GenerationModel model,
+        GenerationOptions options,
+        GenerationTemplateDescriptor template)
     {
         var builder = new StringBuilder();
 
         builder.AppendLine("using Microsoft.EntityFrameworkCore;");
-        builder.AppendLine($"using {options.RootNamespace}.Domain.Entities;");
+        builder.AppendLine($"using {GetNamespace(options, template.EntityNamespace)};");
         if (options.GenerateConfigurations)
         {
-            builder.AppendLine($"using {options.RootNamespace}.Infrastructure.Configurations;");
+            builder.AppendLine($"using {GetNamespace(options, template.ConfigurationNamespace)};");
         }
 
         builder.AppendLine();
-        builder.AppendLine($"namespace {options.RootNamespace}.Infrastructure.Data;");
+        builder.AppendLine($"namespace {GetNamespace(options, template.DbContextNamespace)};");
         builder.AppendLine();
         builder.AppendLine($"public class {options.DbContextName} : DbContext");
         builder.AppendLine("{");
@@ -236,15 +245,16 @@ public sealed class CSharpCodeGenerator : ICodeGenerator
     private static string GenerateConfiguration(
         TableGenerationModel table,
         GenerationModel model,
-        GenerationOptions options)
+        GenerationOptions options,
+        GenerationTemplateDescriptor template)
     {
         var builder = new StringBuilder();
 
         builder.AppendLine("using Microsoft.EntityFrameworkCore;");
         builder.AppendLine("using Microsoft.EntityFrameworkCore.Metadata.Builders;");
-        builder.AppendLine($"using {options.RootNamespace}.Domain.Entities;");
+        builder.AppendLine($"using {GetNamespace(options, template.EntityNamespace)};");
         builder.AppendLine();
-        builder.AppendLine($"namespace {options.RootNamespace}.Infrastructure.Configurations;");
+        builder.AppendLine($"namespace {GetNamespace(options, template.ConfigurationNamespace)};");
         builder.AppendLine();
         builder.AppendLine($"public class {table.EntityName}Configuration : IEntityTypeConfiguration<{table.EntityName}>");
         builder.AppendLine("{");
@@ -359,6 +369,7 @@ public sealed class CSharpCodeGenerator : ICodeGenerator
     private static string GenerateDto(
         TableGenerationModel table,
         GenerationOptions options,
+        GenerationTemplateDescriptor template,
         string dtoName,
         IEnumerable<ColumnSchema> columns)
     {
@@ -370,7 +381,7 @@ public sealed class CSharpCodeGenerator : ICodeGenerator
             builder.AppendLine();
         }
 
-        builder.AppendLine($"namespace {options.RootNamespace}.Application.DTOs;");
+        builder.AppendLine($"namespace {GetNamespace(options, template.DtoNamespace)};");
         builder.AppendLine();
         builder.AppendLine($"public class {dtoName}");
         builder.AppendLine("{");
@@ -385,12 +396,15 @@ public sealed class CSharpCodeGenerator : ICodeGenerator
         return builder.ToString();
     }
 
-    private static string GenerateController(TableGenerationModel table, GenerationOptions options)
+    private static string GenerateController(
+        TableGenerationModel table,
+        GenerationOptions options,
+        GenerationTemplateDescriptor template)
     {
         var keyColumn = table.Table.PrimaryKey.FirstOrDefault() ?? table.Table.Columns.FirstOrDefault();
         if (keyColumn is null)
         {
-            return GenerateEmptyController(table, options);
+            return GenerateEmptyController(table, options, template);
         }
 
         var keyPropertyName = ToPropertyName(keyColumn.Name);
@@ -406,11 +420,11 @@ public sealed class CSharpCodeGenerator : ICodeGenerator
         builder.AppendLine("using System.Threading.Tasks;");
         builder.AppendLine("using Microsoft.AspNetCore.Mvc;");
         builder.AppendLine("using Microsoft.EntityFrameworkCore;");
-        builder.AppendLine($"using {options.RootNamespace}.Application.DTOs;");
-        builder.AppendLine($"using {options.RootNamespace}.Domain.Entities;");
-        builder.AppendLine($"using {options.RootNamespace}.Infrastructure.Data;");
+        builder.AppendLine($"using {GetNamespace(options, template.DtoNamespace)};");
+        builder.AppendLine($"using {GetNamespace(options, template.EntityNamespace)};");
+        builder.AppendLine($"using {GetNamespace(options, template.DbContextNamespace)};");
         builder.AppendLine();
-        builder.AppendLine($"namespace {options.RootNamespace}.API.Controllers;");
+        builder.AppendLine($"namespace {GetNamespace(options, template.ApiNamespace)};");
         builder.AppendLine();
         builder.AppendLine("[ApiController]");
         builder.AppendLine($"[Route(\"api/[controller]\")]");
@@ -524,11 +538,174 @@ public sealed class CSharpCodeGenerator : ICodeGenerator
         return builder.ToString();
     }
 
-    private static string GenerateEmptyController(TableGenerationModel table, GenerationOptions options)
+    private static string GenerateEndpoint(
+        TableGenerationModel table,
+        GenerationOptions options,
+        GenerationTemplateDescriptor template)
+    {
+        var keyColumn = table.Table.PrimaryKey.FirstOrDefault() ?? table.Table.Columns.FirstOrDefault();
+        if (keyColumn is null)
+        {
+            return GenerateEmptyEndpoint(table, options, template);
+        }
+
+        var keyPropertyName = ToPropertyName(keyColumn.Name);
+        var keyParameterName = ToParameterName(keyPropertyName);
+        var keyType = GetPropertyType(keyColumn);
+        var mutableColumns = GetMutableDtoColumns(table).ToArray();
+        var route = ToKebabCase(table.DbSetName);
+        var builder = new StringBuilder();
+
+        builder.AppendLine("using System;");
+        builder.AppendLine("using System.Collections.Generic;");
+        builder.AppendLine("using System.Linq;");
+        builder.AppendLine("using System.Threading;");
+        builder.AppendLine("using System.Threading.Tasks;");
+        builder.AppendLine("using Microsoft.AspNetCore.Builder;");
+        builder.AppendLine("using Microsoft.AspNetCore.Http;");
+        builder.AppendLine("using Microsoft.AspNetCore.Routing;");
+        builder.AppendLine("using Microsoft.EntityFrameworkCore;");
+        builder.AppendLine($"using {GetNamespace(options, template.DtoNamespace)};");
+        builder.AppendLine($"using {GetNamespace(options, template.EntityNamespace)};");
+        builder.AppendLine($"using {GetNamespace(options, template.DbContextNamespace)};");
+        builder.AppendLine();
+        builder.AppendLine($"namespace {GetNamespace(options, template.ApiNamespace)};");
+        builder.AppendLine();
+        builder.AppendLine($"public static class {table.EntityName}Endpoints");
+        builder.AppendLine("{");
+        builder.AppendLine($"    public static IEndpointRouteBuilder Map{table.EntityName}Endpoints(this IEndpointRouteBuilder endpoints)");
+        builder.AppendLine("    {");
+        builder.AppendLine($"        var group = endpoints.MapGroup(\"/api/{route}\").WithTags({ToLiteral(table.DbSetName)});");
+        builder.AppendLine();
+        builder.AppendLine($"        group.MapGet(\"/\", async ({options.DbContextName} context, CancellationToken cancellationToken) =>");
+        builder.AppendLine("        {");
+        builder.AppendLine($"            var entities = await context.{table.DbSetName}");
+        builder.AppendLine("                .AsNoTracking()");
+        builder.AppendLine("                .ToListAsync(cancellationToken);");
+        builder.AppendLine();
+        builder.AppendLine("            return Results.Ok(entities.Select(MapToDto));");
+        builder.AppendLine("        });");
+        builder.AppendLine();
+        builder.AppendLine($"        group.MapGet(\"/{{id}}\", async ({keyType} {keyParameterName}, {options.DbContextName} context, CancellationToken cancellationToken) =>");
+        builder.AppendLine("        {");
+        builder.AppendLine($"            var entity = await context.{table.DbSetName}");
+        builder.AppendLine("                .AsNoTracking()");
+        builder.AppendLine($"                .FirstOrDefaultAsync(entity => entity.{keyPropertyName} == {keyParameterName}, cancellationToken);");
+        builder.AppendLine();
+        builder.AppendLine("            return entity is null");
+        builder.AppendLine("                ? Results.NotFound()");
+        builder.AppendLine("                : Results.Ok(MapToDto(entity));");
+        builder.AppendLine("        });");
+        builder.AppendLine();
+        builder.AppendLine($"        group.MapPost(\"/\", async (Create{table.EntityName}Dto dto, {options.DbContextName} context, CancellationToken cancellationToken) =>");
+        builder.AppendLine("        {");
+        builder.AppendLine($"            var entity = new {table.EntityName}");
+        builder.AppendLine("            {");
+
+        foreach (var column in mutableColumns)
+        {
+            var propertyName = ToPropertyName(column.Name);
+            builder.AppendLine($"                {propertyName} = dto.{propertyName},");
+        }
+
+        builder.AppendLine("            };");
+        builder.AppendLine();
+        builder.AppendLine($"            context.{table.DbSetName}.Add(entity);");
+        builder.AppendLine("            await context.SaveChangesAsync(cancellationToken);");
+        builder.AppendLine();
+        builder.AppendLine($"            return Results.Created($\"/api/{route}/{{entity.{keyPropertyName}}}\", MapToDto(entity));");
+        builder.AppendLine("        });");
+        builder.AppendLine();
+        builder.AppendLine($"        group.MapPut(\"/{{id}}\", async ({keyType} {keyParameterName}, Update{table.EntityName}Dto dto, {options.DbContextName} context, CancellationToken cancellationToken) =>");
+        builder.AppendLine("        {");
+        builder.AppendLine($"            var entity = await context.{table.DbSetName}");
+        builder.AppendLine($"                .FirstOrDefaultAsync(entity => entity.{keyPropertyName} == {keyParameterName}, cancellationToken);");
+        builder.AppendLine();
+        builder.AppendLine("            if (entity is null)");
+        builder.AppendLine("            {");
+        builder.AppendLine("                return Results.NotFound();");
+        builder.AppendLine("            }");
+        builder.AppendLine();
+
+        foreach (var column in mutableColumns)
+        {
+            var propertyName = ToPropertyName(column.Name);
+            builder.AppendLine($"            entity.{propertyName} = dto.{propertyName};");
+        }
+
+        builder.AppendLine();
+        builder.AppendLine("            await context.SaveChangesAsync(cancellationToken);");
+        builder.AppendLine();
+        builder.AppendLine("            return Results.NoContent();");
+        builder.AppendLine("        });");
+        builder.AppendLine();
+        builder.AppendLine($"        group.MapDelete(\"/{{id}}\", async ({keyType} {keyParameterName}, {options.DbContextName} context, CancellationToken cancellationToken) =>");
+        builder.AppendLine("        {");
+        builder.AppendLine($"            var entity = await context.{table.DbSetName}");
+        builder.AppendLine($"                .FirstOrDefaultAsync(entity => entity.{keyPropertyName} == {keyParameterName}, cancellationToken);");
+        builder.AppendLine();
+        builder.AppendLine("            if (entity is null)");
+        builder.AppendLine("            {");
+        builder.AppendLine("                return Results.NotFound();");
+        builder.AppendLine("            }");
+        builder.AppendLine();
+        builder.AppendLine($"            context.{table.DbSetName}.Remove(entity);");
+        builder.AppendLine("            await context.SaveChangesAsync(cancellationToken);");
+        builder.AppendLine();
+        builder.AppendLine("            return Results.NoContent();");
+        builder.AppendLine("        });");
+        builder.AppendLine();
+        builder.AppendLine("        return endpoints;");
+        builder.AppendLine("    }");
+        builder.AppendLine();
+        builder.AppendLine($"    private static {table.EntityName}Dto MapToDto({table.EntityName} entity)");
+        builder.AppendLine("    {");
+        builder.AppendLine($"        return new {table.EntityName}Dto");
+        builder.AppendLine("        {");
+
+        foreach (var column in table.Table.Columns)
+        {
+            var propertyName = ToPropertyName(column.Name);
+            builder.AppendLine($"            {propertyName} = entity.{propertyName},");
+        }
+
+        builder.AppendLine("        };");
+        builder.AppendLine("    }");
+        builder.AppendLine("}");
+
+        return builder.ToString();
+    }
+
+    private static string GenerateEmptyEndpoint(
+        TableGenerationModel table,
+        GenerationOptions options,
+        GenerationTemplateDescriptor template)
     {
         var builder = new StringBuilder();
 
-        builder.AppendLine($"namespace {options.RootNamespace}.API.Controllers;");
+        builder.AppendLine("using Microsoft.AspNetCore.Routing;");
+        builder.AppendLine();
+        builder.AppendLine($"namespace {GetNamespace(options, template.ApiNamespace)};");
+        builder.AppendLine();
+        builder.AppendLine($"public static class {table.EntityName}Endpoints");
+        builder.AppendLine("{");
+        builder.AppendLine($"    public static IEndpointRouteBuilder Map{table.EntityName}Endpoints(this IEndpointRouteBuilder endpoints)");
+        builder.AppendLine("    {");
+        builder.AppendLine("        return endpoints;");
+        builder.AppendLine("    }");
+        builder.AppendLine("}");
+
+        return builder.ToString();
+    }
+
+    private static string GenerateEmptyController(
+        TableGenerationModel table,
+        GenerationOptions options,
+        GenerationTemplateDescriptor template)
+    {
+        var builder = new StringBuilder();
+
+        builder.AppendLine($"namespace {GetNamespace(options, template.ApiNamespace)};");
         builder.AppendLine();
         builder.AppendLine($"public class {table.ControllerName}");
         builder.AppendLine("{");
@@ -708,6 +885,26 @@ public sealed class CSharpCodeGenerator : ICodeGenerator
         return builder.ToString();
     }
 
+    private static string ToKebabCase(string name)
+    {
+        var pascalName = ToPascalCase(name);
+        var builder = new StringBuilder();
+
+        for (var index = 0; index < pascalName.Length; index++)
+        {
+            var character = pascalName[index];
+
+            if (index > 0 && char.IsUpper(character))
+            {
+                builder.Append('-');
+            }
+
+            builder.Append(char.ToLowerInvariant(character));
+        }
+
+        return builder.Length == 0 ? "values" : builder.ToString();
+    }
+
     private static string MakeSingular(string name)
     {
         if (name.EndsWith("ies", StringComparison.OrdinalIgnoreCase) && name.Length > 3)
@@ -736,6 +933,16 @@ public sealed class CSharpCodeGenerator : ICodeGenerator
     private static string ToLiteral(string value)
     {
         return $"\"{value.Replace("\\", "\\\\").Replace("\"", "\\\"")}\"";
+    }
+
+    private static string GetNamespace(GenerationOptions options, string suffix)
+    {
+        return $"{options.RootNamespace}.{suffix}";
+    }
+
+    private static string CombinePath(string folder, string fileName)
+    {
+        return $"{folder.TrimEnd('/')}/{fileName}";
     }
 
     private sealed record GenerationModel(IReadOnlyList<TableGenerationModel> Tables)

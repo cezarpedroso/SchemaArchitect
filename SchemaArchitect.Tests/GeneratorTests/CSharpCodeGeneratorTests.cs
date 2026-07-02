@@ -28,6 +28,69 @@ public sealed class CSharpCodeGeneratorTests
     }
 
     /// <summary>
+    /// Verifies Standard EF Core remains the existing output contract.
+    /// </summary>
+    [Fact]
+    public async Task GenerateAsync_WhenStandardTemplateIsSelected_PreservesCurrentOutputStructure()
+    {
+        var generator = new CSharpCodeGenerator();
+        var options = CreateOptions() with
+        {
+            Template = GenerationTemplate.StandardEfCore,
+        };
+
+        var files = await generator.GenerateAsync(CreateSchema(), options);
+
+        Assert.Contains(files, file => file.RelativePath == "Domain/Entities/Customer.cs");
+        Assert.Contains(files, file => file.RelativePath == "Infrastructure/Data/AppDbContext.cs");
+        Assert.Contains(files, file => file.RelativePath == "Infrastructure/Configurations/CustomerConfiguration.cs");
+        Assert.Contains(files, file => file.RelativePath == "Application/DTOs/CustomerDto.cs");
+        Assert.Contains(files, file => file.RelativePath == "API/Controllers/CustomersController.cs");
+    }
+
+    /// <summary>
+    /// Verifies Minimal API generates endpoint artifacts instead of controller artifacts.
+    /// </summary>
+    [Fact]
+    public async Task GenerateAsync_WhenMinimalApiTemplateIsSelected_GeneratesEndpointFiles()
+    {
+        var generator = new CSharpCodeGenerator();
+        var options = CreateOptions() with
+        {
+            Template = GenerationTemplate.MinimalApi,
+        };
+
+        var files = await generator.GenerateAsync(CreateSchema(), options);
+        var endpoint = GetFile(files, "API/Endpoints/CustomerEndpoints.cs");
+
+        Assert.Contains("namespace Acme.Generated.API.Endpoints;", endpoint.Content);
+        Assert.Contains("public static class CustomerEndpoints", endpoint.Content);
+        Assert.Contains("MapCustomerEndpoints", endpoint.Content);
+        Assert.DoesNotContain(files, file => file.RelativePath == "API/Controllers/CustomersController.cs");
+    }
+
+    /// <summary>
+    /// Verifies DDD uses aggregate-oriented domain paths and namespaces.
+    /// </summary>
+    [Fact]
+    public async Task GenerateAsync_WhenDddTemplateIsSelected_UsesAggregateStructure()
+    {
+        var generator = new CSharpCodeGenerator();
+        var options = CreateOptions() with
+        {
+            Template = GenerationTemplate.Ddd,
+        };
+
+        var files = await generator.GenerateAsync(CreateSchema(), options);
+        var entity = GetFile(files, "Domain/Aggregates/Customer.cs");
+        var dbContext = GetFile(files, "Infrastructure/Persistence/AppDbContext.cs");
+
+        Assert.Contains("namespace Acme.Generated.Domain.Aggregates;", entity.Content);
+        Assert.Contains("using Acme.Generated.Domain.Aggregates;", dbContext.Content);
+        Assert.Contains(files, file => file.RelativePath == "Application/Contracts/CustomerDto.cs");
+    }
+
+    /// <summary>
     /// Verifies entity generation includes scalar properties and navigation properties.
     /// </summary>
     [Fact]

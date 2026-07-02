@@ -221,7 +221,7 @@ public sealed class SqlServerSchemaParserTests
     }
 
     /// <summary>
-    /// Verifies portfolio sample SQL files remain parseable.
+    /// Verifies sample SQL files remain parseable.
     /// </summary>
     /// <param name="fileName">The sample SQL file name.</param>
     /// <param name="expectedTableCount">The expected number of parsed tables.</param>
