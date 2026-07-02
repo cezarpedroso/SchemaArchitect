@@ -1,69 +1,82 @@
-﻿# Schema Architect
+# Schema Architect
 
-Schema Architect is an ASP.NET Core Razor Pages application that turns relational `.sql` schema files into EF Core-ready C# project foundations.
+Schema Architect is an ASP.NET Core Razor Pages application that generates an Entity Framework Core project foundation from SQL schema files.
 
-The app accepts a schema upload, parses `CREATE TABLE` statements, previews the discovered tables/columns/keys/relationships, generates source files, previews the generated output, and downloads everything as a ZIP.
+Instead of manually recreating entity models, `DbContext`, Fluent API configurations, DTOs, and controller scaffolding, Schema Architect analyzes your database schema and generates a clean, reviewable starting point for your application.
 
-## Problem solved
+The generated code is intended to accelerate development—not replace developer review or customization.
 
-Starting a new EF Core API from an existing database schema is repetitive:
+---
 
-- translate SQL types to C# types;
-- recreate entity classes;
-- wire up primary keys, identity columns, max lengths, precision, and relationships;
-- create DbContext and Fluent API configuration classes;
-- build DTOs and controller scaffolding.
+## Why Schema Architect?
 
-Schema Architect automates the boring first pass so developers can start with clean, reviewable code instead of a blank project.
+Building an EF Core application from an existing database often involves repeating the same setup work:
+
+- Creating entity classes
+- Mapping SQL data types to C#
+- Configuring primary and foreign keys
+- Writing Fluent API configurations
+- Creating DTOs
+- Scaffolding CRUD controllers
+
+Schema Architect automates these repetitive tasks so you can spend less time on boilerplate and more time building your application.
+
+---
 
 ## Features
 
-- Upload and validate `.sql` schema files.
-- Choose SQL Server, PostgreSQL, MySQL, SQLite, Oracle, or IBM Db2.
-- Parse `CREATE TABLE` DDL.
+- Upload and validate `.sql` schema files
+- Support for SQL Server, PostgreSQL, MySQL, SQLite, Oracle, and IBM Db2
+- Parse `CREATE TABLE` statements
 - Detect:
-  - schemas and table names;
-  - columns and SQL types;
-  - nullable vs required columns;
-  - primary keys;
-  - identity columns;
-  - inline and table-level foreign keys;
-  - string/binary max lengths;
-  - decimal/numeric precision and scale.
-- Map database-specific SQL types to C# types.
-- Preview parsed schema before generation.
+  - Tables and schemas
+  - Columns and SQL data types
+  - Nullable and required fields
+  - Primary keys
+  - Identity columns
+  - Foreign key relationships
+  - String and binary length constraints
+  - Decimal precision and scale
+- Automatically map SQL types to C# types
+- Preview the parsed schema before generation
 - Generate:
-  - EF Core entity classes;
-  - `DbContext`;
-  - `IEntityTypeConfiguration<T>` Fluent API classes;
-  - read/create/update DTOs;
-  - basic CRUD controllers;
-  - EF Core migration instructions.
-- Preview generated files in the browser.
-- Download generated output as a ZIP.
-- No authentication, direct database connections, or SQL client dependencies.
+  - EF Core entity classes
+  - `DbContext`
+  - Fluent API (`IEntityTypeConfiguration<T>`) classes
+  - Create, Read, and Update DTOs
+  - Basic CRUD controller scaffolding
+  - EF Core migration instructions
+- Preview generated source code in the browser
+- Download the generated project as a ZIP archive
 
-## Tech stack
+---
+
+## Tech Stack
 
 - .NET 9 / .NET 10
 - ASP.NET Core Razor Pages
+- Entity Framework Core
 - Bootstrap
 - xUnit
 - GitHub Actions
 
+---
+
 ## Screenshots
 
-> Add screenshots before publishing the public repository.
+> Screenshots will be added before the first public release.
 
-- Home page: `docs/screenshots/home.png`
-- Upload page: `docs/screenshots/upload.png`
-- Schema preview: `docs/screenshots/schema-preview.png`
-- Generated code preview: `docs/screenshots/code-preview.png`
+- Home page
+- Upload page
+- Schema preview
+- Generated code preview
 
-## Solution structure
+---
+
+## Project Structure
 
 ```text
-Schema Architect
+SchemaArchitect
 ├── SchemaArchitect.Core
 │   ├── Generation
 │   ├── Interfaces
@@ -78,13 +91,15 @@ Schema Architect
 └── samples
 ```
 
-## How to run locally
+---
 
-Prerequisites:
+## Getting Started
+
+### Prerequisites
 
 - .NET 9 SDK or .NET 10 SDK
 
-From the repository root:
+### Run locally
 
 ```powershell
 dotnet restore SchemaArchitect.sln
@@ -93,9 +108,11 @@ dotnet test SchemaArchitect.sln
 dotnet run --project SchemaArchitect.Web/SchemaArchitect.Web.csproj
 ```
 
-Then open the local URL printed by ASP.NET Core and upload one of the sample files from the `samples` folder.
+Once the application is running, open the local URL displayed in the terminal and upload one of the sample SQL files from the `samples` directory.
 
-## Sample input
+---
+
+## Example Input
 
 ```sql
 CREATE TABLE [dbo].[Customers]
@@ -107,7 +124,7 @@ CREATE TABLE [dbo].[Customers]
 );
 ```
 
-## Sample generated output
+## Example Output
 
 ```csharp
 namespace SchemaArchitect.Generated.Domain.Entities;
@@ -122,7 +139,11 @@ public class Customer
 }
 ```
 
-## Sample SQL files
+---
+
+## Sample Schemas
+
+The repository includes several sample schemas for testing and experimentation:
 
 - `samples/simple-two-table-schema.sql`
 - `samples/foreign-key-schema.sql`
@@ -130,22 +151,38 @@ public class Customer
 - `samples/precision-and-length-schema.sql`
 - `samples/complex-commerce-schema.sql`
 
+---
+
 ## Roadmap
 
-- Expand support for advanced DDL patterns and edge cases across supported dialects.
-- Generate cleaner pluralization/singularization using a dedicated naming service.
-- Add optional generated project templates.
-- Add generated output compile verification.
-- Add persisted job storage for longer sessions.
-- Add richer code highlighting.
-- Add downloadable sample output packages.
+- Improve support for advanced SQL syntax across supported database engines
+- Handle additional DDL edge cases
+- Improve naming and pluralization logic
+- Generate optional solution and project templates
+- Verify generated code compiles successfully
+- Add persistent job storage
+- Improve syntax highlighting in generated code previews
+- Provide downloadable sample output projects
 
-## Scope notes
+---
 
-- The SQL parser is focused on table-definition DDL and is not intended to replace a full database-specific SQL compiler.
-- Generated EF Core code assumes the target project has EF Core packages installed.
-- Uploaded schema and generated output are stored temporarily in memory.
+## Limitations
+
+- Focuses on parsing `CREATE TABLE` definitions.
+- It is not intended to be a complete SQL parser.
+- Generated projects require Entity Framework Core packages to be installed.
+- Uploaded schemas and generated files are processed temporarily and are not persisted.
+
+---
+
+## Contributing
+
+Contributions, bug reports, and feature requests are welcome.
+
+If you'd like to improve SQL dialect support, code generation, or the user experience, feel free to open an issue or submit a pull request.
+
+---
 
 ## License
 
-Schema Architect is released under the MIT License. See [LICENSE](LICENSE).
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
