@@ -1,0 +1,75 @@
+﻿@page
+@model SchemaArchitect.Web.Pages.Upload.IndexModel
+@{
+    ViewData["Title"] = "Upload schema";
+}
+
+<div class="row g-4 align-items-start">
+    <aside class="col-lg-3">
+        <div class="side-panel mb-3">
+            <span class="section-eyebrow">Upload Tips</span>
+            <p class="text-muted mb-2 mt-3">Choose the database engine that produced the schema before parsing.</p>
+            <p class="text-muted mb-0">Include table definitions, primary keys, identity columns, nullability, and foreign keys.</p>
+        </div>
+        <div class="side-panel">
+            <span class="section-eyebrow">Requirements</span>
+            <ul class="text-muted mt-3 mb-0 ps-3">
+                <li><code>.sql</code> schema files</li>
+                <li>Maximum file size: 5 MB</li>
+                <li><code>CREATE TABLE</code> statements</li>
+            </ul>
+        </div>
+    </aside>
+
+    <div class="col-lg-9">
+        <div class="mb-4">
+            <span class="section-eyebrow">Step 1 of 3</span>
+            <h1 class="h2 mt-2 mb-2">Schema Upload</h1>
+            <p class="lead text-muted mb-0">
+                Select your SQL dialect, then provide a schema file to begin generating EF Core-ready files.
+            </p>
+        </div>
+
+        <div class="card upload-card">
+            <div class="card-body p-4">
+                <form method="post" enctype="multipart/form-data">
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+                    <div class="mb-4">
+                        <label asp-for="SelectedDialect" class="form-label">Database engine</label>
+                        <select asp-for="SelectedDialect" asp-items="Model.AvailableDialects" class="form-select"></select>
+                        <span asp-validation-for="SelectedDialect" class="text-danger"></span>
+                        <div class="form-text">
+                            Schema Architect parses CREATE TABLE DDL for SQL Server, PostgreSQL, MySQL, SQLite, Oracle, and IBM Db2.
+                        </div>
+                    </div>
+
+                    <label class="upload-drop-zone" asp-for="SchemaFile">
+                        <span class="upload-icon">.sql</span>
+                        <span class="upload-title">Drag and drop your .sql file or click to browse</span>
+                        <span class="upload-subtitle">Schema Architect validates the file before parsing.</span>
+                    </label>
+
+                    <input asp-for="SchemaFile" type="file" accept=".sql" class="visually-hidden" />
+                    <span asp-validation-for="SchemaFile" class="text-danger d-block mt-3"></span>
+
+                    <div class="selected-file-row mt-4">
+                        <span class="selected-file-icon">SQL</span>
+                        <div>
+                            <strong id="selectedFileName">No file selected</strong>
+                            <div class="text-muted small">Ready to analyze after selection</div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-end mt-4">
+                        <button type="submit" class="btn btn-primary btn-lg">Process Schema</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

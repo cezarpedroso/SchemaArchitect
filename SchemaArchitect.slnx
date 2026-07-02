@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="SchemaArchitect.Core/SchemaArchitect.Core.csproj" />
+  <Project Path="SchemaArchitect.Tests/SchemaArchitect.Tests.csproj" />
+  <Project Path="SchemaArchitect.Web/SchemaArchitect.Web.csproj" />
+</Solution>

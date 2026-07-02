@@ -1,0 +1,182 @@
+@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Home";
+
+    var supportedEngines = new[]
+    {
+        new { Name = "SQL Server", Icon = "sql-server.png", CssClass = string.Empty },
+        new { Name = "PostgreSQL", Icon = "postgresql.png", CssClass = "engine-logo-postgres" },
+        new { Name = "MySQL", Icon = "mysql.png", CssClass = string.Empty },
+        new { Name = "SQLite", Icon = "sqlite.png", CssClass = string.Empty },
+        new { Name = "Oracle", Icon = "oracle.png", CssClass = string.Empty },
+    };
+
+    var whyChooseItems = new[]
+    {
+        new
+        {
+            Icon = "1.png",
+            Title = "No Database Connections",
+            Description = "No database connections, connection strings, or credentials required. Schema Architect analyzes static SQL DDL files only.",
+        },
+        new
+        {
+            Icon = "2.png",
+            Title = "Zero Setup",
+            Description = "No installation, no accounts, and no setup. Upload a schema and generate code in just a few clicks.",
+        },
+        new
+        {
+            Icon = "3.png",
+            Title = "Production-Ready Output",
+            Description = "Generate entities, DbContext, Fluent API, DTOs, controllers, and a clean project structure ready for development.",
+        },
+        new
+        {
+            Icon = "4.png",
+            Title = ".NET Native",
+            Description = "Built for .NET 9/10 with nullable reference types, modern C#, and current EF Core conventions.",
+        },
+        new
+        {
+            Icon = "5.png",
+            Title = "Deterministic Generation",
+            Description = "The same schema always produces the same clean project. No prompts. No hallucinations. No surprises.",
+        },
+    };
+}
+
+<section class="home-hero">
+    <div class="row align-items-center g-5">
+        <div class="col-xl-5 col-lg-6">
+            <div class="hero-copy">
+                <span class="section-eyebrow">SQL Dialect -> EF Core</span>
+                <h1 class="display-4 fw-semibold mt-3">Turn SQL schemas into clean .NET code.</h1>
+                <p class="lead text-muted">
+                    Schema Architect parses relational SQL DDL, shows you the detected model, then generates
+                    EF Core-ready files you can preview and export.
+                </p>
+                <div class="d-flex flex-wrap gap-2 mt-4">
+                    <a asp-page="/Upload/Index" class="btn btn-primary btn-lg">Upload Schema</a>
+                    <a asp-page="/Features" class="btn btn-outline-secondary btn-lg">View Features</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-7 col-lg-6">
+            <video class="hero-demo-video" controls loop playsinline preload="auto" aria-label="Demo of Schema Architect parsing SQL and generating code">
+                <source src="@Url.Content("~/videos/schemaarchitect-demo.mp4")?v=20260702" type="video/mp4" />
+                Your browser does not support the video tag.
+            </video>
+        </div>
+    </div>
+</section>
+
+<div class="home-continuation">
+    <section class="engine-carousel-section" aria-labelledby="supported-engines-title">
+        <h2 id="supported-engines-title" class="engine-carousel-label">Supported SQL Engines</h2>
+        <div class="engine-marquee" aria-label="Supported SQL engines">
+            <div class="engine-marquee-track">
+                @for (var repeat = 0; repeat < 2; repeat++)
+                {
+                    <div class="engine-logo-group" aria-hidden="@(repeat == 1 ? "true" : "false")">
+                        @foreach (var engine in supportedEngines)
+                        {
+                            <div class="engine-logo-item @engine.CssClass">
+                                <img
+                                    src="~/images/sqlicons/@engine.Icon"
+                                    asp-append-version="true"
+                                    alt="@(repeat == 0 ? engine.Name : string.Empty)"
+                                    loading="lazy"
+                                    title="@engine.Name" />
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    </section>
+
+    <div class="home-continuation-inner">
+        <section class="why-section" aria-labelledby="why-developers-title">
+            <div class="why-section-intro">
+                <span class="section-eyebrow">Why Teams Use It</span>
+                <h2 id="why-developers-title">Why developers choose Schema Architect</h2>
+                <p class="why-section-subtitle">Designed for production, not prototypes.</p>
+            </div>
+
+            @for (var index = 0; index < whyChooseItems.Length; index++)
+            {
+                var item = whyChooseItems[index];
+                var reverse = index % 2 == 1;
+
+                <div class="why-feature-row @(reverse ? "why-feature-row-reverse" : string.Empty)">
+                    <div class="why-feature-visual">
+                        <img
+                            class="why-feature-icon"
+                            src="~/images/iconshomepage/@item.Icon"
+                            asp-append-version="true"
+                            alt=""
+                            loading="lazy" />
+                    </div>
+                    <div class="why-feature-copy">
+                        <h3>@item.Title</h3>
+                        <p class="text-muted mb-0">@item.Description</p>
+                    </div>
+                </div>
+            }
+        </section>
+
+        <section class="mb-5">
+            <div class="text-center mb-4">
+                <span class="section-eyebrow">Workflow</span>
+            </div>
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="workflow-card">
+                        <div class="workflow-icon">01</div>
+                        <h2 class="h5">Upload .sql</h2>
+                        <p class="text-muted mb-0">Drop in SQL DDL with tables, keys, constraints, and relationships.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="workflow-card">
+                        <div class="workflow-icon">02</div>
+                        <h2 class="h5">Inspect schema</h2>
+                        <p class="text-muted mb-0">Review columns, nullability, primary keys, identity fields, and foreign keys.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="workflow-card">
+                        <div class="workflow-icon">03</div>
+                        <h2 class="h5">Export code</h2>
+                        <p class="text-muted mb-0">Generate entities, DbContext, Fluent API, DTOs, controllers, and migration notes.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="features" class="row g-4">
+            <div class="col-lg-8">
+                <div class="capability-card h-100">
+                    <div class="card-body">
+                        <span class="section-eyebrow">Features</span>
+                        <h2 class="h4 mt-3">Production-oriented output without database connections.</h2>
+                        <p class="text-muted">
+                            Schema Architect focuses on safe static analysis of schema files and clean generated C# foundations.
+                        </p>
+                        <div class="code-pill">public DbSet&lt;Order&gt; Orders { get; set; }</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="capability-card h-100 text-center d-flex align-items-center justify-content-center">
+                    <div class="card-body">
+                        <div class="metric-display">.NET 9 / 10</div>
+                        <span class="section-eyebrow">Modern Runtime Ready</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+</div>

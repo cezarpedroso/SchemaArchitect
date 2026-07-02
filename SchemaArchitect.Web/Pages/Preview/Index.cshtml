@@ -1,0 +1,634 @@
+@page
+@model SchemaArchitect.Web.Pages.Preview.IndexModel
+@{
+    ViewData["Title"] = "Schema preview";
+    var session = Model.Session;
+}
+
+@if (session is not null)
+{
+    var schemaItems = session.Schema.Tables
+        .Select((table, index) => new { Table = table, Index = index })
+        .ToArray();
+    var schemaGroups = schemaItems
+        .GroupBy(item => item.Table.Schema)
+        .OrderBy(group => group.Key)
+        .ToArray();
+    var healthReport = Model.HealthReport;
+    var totalWarnings = healthReport?.WarningCount ?? 0;
+    var totalIssues = healthReport?.IssueCount ?? 0;
+
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+        <div>
+            <span class="section-eyebrow">Step 2 of 3</span>
+            <h1 class="h2 mt-2 mb-1">Interactive Schema Explorer</h1>
+            <p class="text-muted mb-0">
+                Parsed <strong>@session.OriginalFileName</strong> using <strong>@session.Dialect.GetDisplayName()</strong>.
+                <span class="schema-inline-summary">
+                    <span>@session.Schema.Tables.Count Tables</span>
+                    <span>@session.Schema.Tables.Sum(table => table.Columns.Count) Columns</span>
+                    <span>@session.Schema.Tables.Sum(table => table.ForeignKeys.Count) Foreign Keys</span>
+                    @if (totalWarnings > 0)
+                    {
+                        <span>@totalWarnings Warnings</span>
+                    }
+                    @if (totalIssues > 0)
+                    {
+                        <span>@totalIssues Issues</span>
+                    }
+                </span>
+            </p>
+        </div>
+        <a asp-page="/Upload/Index" class="btn btn-outline-secondary">Upload another schema</a>
+    </div>
+
+    <div class="row g-4 preview-workbench">
+        <div class="col-xxl-9 col-xl-8">
+            <div class="schema-explorer-shell" data-schema-explorer>
+                <aside class="schema-explorer-sidebar" aria-label="Detected schemas and tables">
+                    <div class="schema-explorer-sidebar-header">
+                        <span class="section-eyebrow">Detected Model</span>
+                        <span class="schema-table-count">@session.Schema.Tables.Count tables</span>
+                    </div>
+
+                    <label class="visually-hidden" for="schemaExplorerSearch">Filter tables</label>
+                    <input id="schemaExplorerSearch"
+                           class="form-control schema-explorer-search"
+                           type="search"
+                           placeholder="Search tables..."
+                           autocomplete="off"
+                           data-schema-search />
+
+                    <div class="schema-groups" data-schema-groups>
+                        @foreach (var schemaGroup in schemaGroups)
+                        {
+                            <details class="schema-group" open data-schema-group>
+                                <summary class="schema-group-summary">
+                                    <span class="schema-group-name">@schemaGroup.Key</span>
+                                    <span class="schema-table-count">@schemaGroup.Count()</span>
+                                </summary>
+                                <div class="schema-table-list">
+                                    @foreach (var item in schemaGroup.OrderBy(item => item.Table.Name))
+                                    {
+                                        var isSelected = item.Index == Model.SelectedTableIndex;
+                                        <button type="button"
+                                                class="schema-table-link @(isSelected ? "active" : string.Empty)"
+                                                data-table-selector
+                                                data-table-index="@item.Index"
+                                                data-table-name="@item.Table.Name"
+                                                data-table-schema="@item.Table.Schema"
+                                                aria-pressed="@(isSelected ? "true" : "false")">
+                                            <span class="schema-table-name">@item.Table.Name</span>
+                                            <span class="schema-table-metrics">
+                                                <span>@item.Table.Columns.Count col</span>
+                                                <span>@item.Table.PrimaryKey.Count PK</span>
+                                                <span>@item.Table.ForeignKeys.Count FK</span>
+                                            </span>
+                                        </button>
+                                    }
+                                </div>
+                            </details>
+                        }
+                    </div>
+                </aside>
+
+                <section class="schema-explorer-main" aria-live="polite" aria-label="Selected table details">
+                    @if (session.Schema.Tables.Count == 0)
+                    {
+                        <div class="empty-state-panel">
+                            <h2 class="h4">No tables detected</h2>
+                            <p class="text-muted mb-0">Upload a SQL schema with at least one CREATE TABLE statement.</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="schema-table-detail-stack">
+                            @foreach (var item in schemaItems)
+                            {
+                                var table = item.Table;
+                                var isSelected = item.Index == Model.SelectedTableIndex;
+                                var foreignKeyColumnNames = table.ForeignKeys
+                                    .SelectMany(foreignKey => foreignKey.Columns)
+                                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
+                                var incomingForeignKeys = session.Schema.Tables
+                                    .SelectMany(sourceTable => sourceTable.ForeignKeys.Select(foreignKey => new { Table = sourceTable, ForeignKey = foreignKey }))
+                                    .Where(incoming => string.Equals(incoming.ForeignKey.PrincipalSchema, table.Schema, StringComparison.OrdinalIgnoreCase) &&
+                                        string.Equals(incoming.ForeignKey.PrincipalTable, table.Name, StringComparison.OrdinalIgnoreCase))
+                                    .ToArray();
+                                var requiredFields = table.Columns.Count(column => !column.IsNullable);
+                                var nullableFields = table.Columns.Count(column => column.IsNullable);
+                                var tableHealthWarningCount = healthReport?.Items.Count(healthItem =>
+                                    healthItem.Severity == SchemaHealthSeverity.Warning &&
+                                    string.Equals(healthItem.TableName, $"{table.Schema}.{table.Name}", StringComparison.OrdinalIgnoreCase)) ?? 0;
+                                var tableHealthIssueCount = healthReport?.Items.Count(healthItem =>
+                                    healthItem.Severity == SchemaHealthSeverity.Issue &&
+                                    string.Equals(healthItem.TableName, $"{table.Schema}.{table.Name}", StringComparison.OrdinalIgnoreCase)) ?? 0;
+                                <article class="schema-table-detail @(isSelected ? "active" : string.Empty)"
+                                         data-table-detail
+                                         data-table-index="@item.Index"
+                                         hidden="@(!isSelected)">
+                                    <div class="schema-detail-header">
+                                        <div>
+                                            <span class="schema-detail-kicker">Table</span>
+                                            <span class="schema-qualified-name">@table.Schema.@table.Name</span>
+                                            <h2 class="schema-detail-title">@table.Name</h2>
+                                        </div>
+                                    </div>
+
+                                    <div class="schema-detail-stats schema-detail-stats-inline" aria-label="Selected table summary">
+                                        <span>@table.Schema schema</span>
+                                        <span>@table.Columns.Count columns</span>
+                                        @if (table.PrimaryKey.Count > 0)
+                                        {
+                                            <span>@table.PrimaryKey.Count primary @(table.PrimaryKey.Count == 1 ? "key" : "keys")</span>
+                                        }
+                                        @if (table.ForeignKeys.Count > 0)
+                                        {
+                                            <span>@table.ForeignKeys.Count foreign @(table.ForeignKeys.Count == 1 ? "key" : "keys")</span>
+                                        }
+                                        @if (table.Indexes.Count > 0)
+                                        {
+                                            <span>@table.Indexes.Count indexes</span>
+                                        }
+                                        <span>@requiredFields required</span>
+                                        @if (nullableFields > 0)
+                                        {
+                                            <span>@nullableFields nullable</span>
+                                        }
+                                        @if (tableHealthWarningCount > 0)
+                                        {
+                                            <span>@tableHealthWarningCount warnings</span>
+                                        }
+                                        @if (tableHealthIssueCount > 0)
+                                        {
+                                            <span>@tableHealthIssueCount issues</span>
+                                        }
+                                    </div>
+
+                                    <ul class="nav nav-tabs schema-tabs" role="tablist">
+                                        <li class="nav-item" role="presentation">
+                                            <button class="nav-link active" id="columns-tab-@item.Index" data-bs-toggle="tab" data-bs-target="#columns-pane-@item.Index" type="button" role="tab" aria-controls="columns-pane-@item.Index" aria-selected="true">Columns</button>
+                                        </li>
+                                        <li class="nav-item" role="presentation">
+                                            <button class="nav-link" id="relationships-tab-@item.Index" data-bs-toggle="tab" data-bs-target="#relationships-pane-@item.Index" type="button" role="tab" aria-controls="relationships-pane-@item.Index" aria-selected="false">Relationships</button>
+                                        </li>
+                                        <li class="nav-item" role="presentation">
+                                            <button class="nav-link" id="indexes-tab-@item.Index" data-bs-toggle="tab" data-bs-target="#indexes-pane-@item.Index" type="button" role="tab" aria-controls="indexes-pane-@item.Index" aria-selected="false">Indexes</button>
+                                        </li>
+                                        <li class="nav-item" role="presentation">
+                                            <button class="nav-link" id="health-tab-@item.Index" data-bs-toggle="tab" data-bs-target="#health-pane-@item.Index" type="button" role="tab" aria-controls="health-pane-@item.Index" aria-selected="false">Schema Health</button>
+                                        </li>
+                                    </ul>
+
+                                    <div class="tab-content schema-tab-content">
+                                        <div class="tab-pane fade show active" id="columns-pane-@item.Index" role="tabpanel" aria-labelledby="columns-tab-@item.Index" tabindex="0">
+                                            <div class="table-responsive">
+                                                <table class="table table-sm align-middle mb-0 schema-detail-table">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Column</th>
+                                                            <th>SQL type</th>
+                                                            <th>C# type</th>
+                                                            <th>Nullability</th>
+                                                            <th>Keys</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        @foreach (var column in table.Columns)
+                                                        {
+                                                            var isForeignKey = foreignKeyColumnNames.Contains(column.Name);
+                                                            <tr>
+                                                                <td>
+                                                                    <span class="column-name-cell">
+                                                                        <span class="column-kind-icon" title="@GetColumnKindLabel(column, isForeignKey)" aria-label="@GetColumnKindLabel(column, isForeignKey)">@GetColumnKindIcon(column, isForeignKey)</span>
+                                                                        <code>@column.Name</code>
+                                                                    </span>
+                                                                </td>
+                                                                <td>
+                                                                    <code>@column.StoreType</code>
+                                                                    @if (column.MaxLength.HasValue)
+                                                                    {
+                                                                        <span class="text-muted">(@(column.MaxLength == -1 ? "max" : column.MaxLength))</span>
+                                                                    }
+                                                                    else if (column.Precision.HasValue)
+                                                                    {
+                                                                        <span class="text-muted">
+                                                                            (@column.Precision@(column.Scale.HasValue ? $", {column.Scale}" : string.Empty))
+                                                                        </span>
+                                                                    }
+                                                                </td>
+                                                                <td><code>@column.CSharpType</code></td>
+                                                                <td>
+                                                                    <span class="column-nullability @(column.IsNullable ? "is-nullable" : "is-required")">
+                                                                        @(column.IsNullable ? "nullable" : "required")
+                                                                    </span>
+                                                                </td>
+                                                                <td>
+                                                                    <div class="schema-key-badges">
+                                                                        @if (column.IsPrimaryKey)
+                                                                        {
+                                                                            <span class="badge text-bg-primary">PK</span>
+                                                                        }
+                                                                        @if (column.IsIdentity)
+                                                                        {
+                                                                            <span class="badge text-bg-info">identity</span>
+                                                                        }
+                                                                        @if (isForeignKey)
+                                                                        {
+                                                                            <span class="badge text-bg-dark">FK</span>
+                                                                        }
+                                                                    </div>
+                                                                </td>
+                                                            </tr>
+                                                        }
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+
+                                        <div class="tab-pane fade" id="relationships-pane-@item.Index" role="tabpanel" aria-labelledby="relationships-tab-@item.Index" tabindex="0">
+                                            <div class="relationship-diagram" aria-label="Relationship diagram for @table.Name">
+                                                <div class="relationship-side">
+                                                    <span class="section-eyebrow">Parents</span>
+                                                    @if (table.ForeignKeys.Count > 0)
+                                                    {
+                                                        @foreach (var foreignKey in table.ForeignKeys)
+                                                        {
+                                                            <div class="relationship-node parent-node">
+                                                                <strong>@foreignKey.PrincipalTable</strong>
+                                                                <span>@string.Join(", ", foreignKey.Columns) &rarr; @string.Join(", ", foreignKey.PrincipalColumns)</span>
+                                                            </div>
+                                                        }
+                                                    }
+                                                    else
+                                                    {
+                                                        <p class="text-muted small mb-0">No parent tables.</p>
+                                                    }
+                                                </div>
+
+                                                <div class="relationship-center">
+                                                    <div class="relationship-line"></div>
+                                                    <div class="relationship-node selected-node">
+                                                        <strong>@table.Name</strong>
+                                                        <span>@table.Columns.Count columns</span>
+                                                    </div>
+                                                </div>
+
+                                                <div class="relationship-side">
+                                                    <span class="section-eyebrow">Children</span>
+                                                    @if (incomingForeignKeys.Length > 0)
+                                                    {
+                                                        @foreach (var incoming in incomingForeignKeys)
+                                                        {
+                                                            <div class="relationship-node child-node">
+                                                                <strong>@incoming.Table.Name</strong>
+                                                                <span>@string.Join(", ", incoming.ForeignKey.Columns)</span>
+                                                            </div>
+                                                        }
+                                                    }
+                                                    else
+                                                    {
+                                                        <p class="text-muted small mb-0">No child tables.</p>
+                                                    }
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="tab-pane fade" id="indexes-pane-@item.Index" role="tabpanel" aria-labelledby="indexes-tab-@item.Index" tabindex="0">
+                                            @if (table.Indexes.Count > 0)
+                                            {
+                                                <div class="index-list">
+                                                    @foreach (var index in table.Indexes)
+                                                    {
+                                                        <div class="index-row">
+                                                            <div>
+                                                                <code>@index.Name</code>
+                                                                @if (index.IsUnique)
+                                                                {
+                                                                    <span class="badge text-bg-primary ms-2">unique</span>
+                                                                }
+                                                            </div>
+                                                            <span class="text-muted">@string.Join(", ", index.Columns)</span>
+                                                        </div>
+                                                    }
+                                                </div>
+                                            }
+                                            else
+                                            {
+                                                <div class="schema-empty-note">
+                                                    <span class="section-eyebrow">Indexes</span>
+                                                    <p class="mb-0">No standalone indexes detected for this table.</p>
+                                                </div>
+                                            }
+
+                                            <div class="constraint-panel">
+                                                <h3 class="h5">Detected constraints</h3>
+                                                <ul class="constraint-list">
+                                                    @if (table.PrimaryKey.Count > 0)
+                                                    {
+                                                        <li>
+                                                            <span class="schema-chip schema-chip-primary">PRIMARY KEY</span>
+                                                            <code>@string.Join(", ", table.PrimaryKey.Select(column => column.Name))</code>
+                                                        </li>
+                                                    }
+
+                                                    @foreach (var foreignKey in table.ForeignKeys)
+                                                    {
+                                                        <li>
+                                                            <span class="schema-chip">FOREIGN KEY</span>
+                                                            <code>@foreignKey.Name</code>
+                                                            <span class="text-muted">@string.Join(", ", foreignKey.Columns)</span>
+                                                        </li>
+                                                    }
+
+                                                    @if (table.PrimaryKey.Count == 0 && table.ForeignKeys.Count == 0)
+                                                    {
+                                                        <li class="text-muted">No primary key or foreign key constraints detected for this table.</li>
+                                                    }
+                                                </ul>
+                                            </div>
+                                        </div>
+
+                                        <div class="tab-pane fade" id="health-pane-@item.Index" role="tabpanel" aria-labelledby="health-tab-@item.Index" tabindex="0">
+                                            @if (healthReport is null)
+                                            {
+                                                <div class="schema-empty-note">
+                                                    <span class="section-eyebrow">Schema Health</span>
+                                                    <p class="mb-0">No health report is available for this schema.</p>
+                                                </div>
+                                            }
+                                            else
+                                            {
+                                                var tableFullName = $"{table.Schema}.{table.Name}";
+                                                var tableHealthItems = healthReport.Items
+                                                    .Where(healthItem => string.IsNullOrWhiteSpace(healthItem.TableName) ||
+                                                        string.Equals(healthItem.TableName, tableFullName, StringComparison.OrdinalIgnoreCase))
+                                                    .ToArray();
+
+                                                <div class="schema-health-summary">
+                                                    <div>
+                                                        <span class="section-eyebrow">Overall</span>
+                                                        <span class="schema-health-overall">
+                                                            <span class="schema-health-badge @GetHealthBadgeClass(healthReport.OverallSeverity)">@healthReport.OverallSeverity</span>
+                                                            <span class="text-muted">Generation remains available.</span>
+                                                        </span>
+                                                    </div>
+                                                    <div class="schema-health-metrics schema-inline-summary" aria-label="Schema health summary">
+                                                        <span>@healthReport.TableCount Tables</span>
+                                                        <span>@healthReport.ColumnCount Columns</span>
+                                                        @if (healthReport.ForeignKeyCount > 0)
+                                                        {
+                                                            <span>@healthReport.ForeignKeyCount Foreign Keys</span>
+                                                        }
+                                                        @if (healthReport.IndexCount > 0)
+                                                        {
+                                                            <span>@healthReport.IndexCount Indexes</span>
+                                                        }
+                                                        @if (healthReport.WarningCount > 0)
+                                                        {
+                                                            <span>@healthReport.WarningCount Warnings</span>
+                                                        }
+                                                        @if (healthReport.IssueCount > 0)
+                                                        {
+                                                            <span>@healthReport.IssueCount Issues</span>
+                                                        }
+                                                    </div>
+                                                </div>
+
+                                                <div class="schema-health-list">
+                                                    @foreach (var healthItem in tableHealthItems)
+                                                    {
+                                                        <div class="schema-health-item @GetHealthItemClass(healthItem.Severity)">
+                                                            <div class="schema-health-item-header">
+                                                                <span class="schema-health-badge @GetHealthBadgeClass(healthItem.Severity)">@healthItem.Severity</span>
+                                                                <strong>@healthItem.Title</strong>
+                                                            </div>
+                                                            <p>@healthItem.Explanation</p>
+                                                            <div class="schema-health-target">
+                                                                @if (!string.IsNullOrWhiteSpace(healthItem.TableName))
+                                                                {
+                                                                    <span>Table <code>@healthItem.TableName</code></span>
+                                                                }
+                                                                @if (!string.IsNullOrWhiteSpace(healthItem.ColumnName))
+                                                                {
+                                                                    <span>Column <code>@healthItem.ColumnName</code></span>
+                                                                }
+                                                            </div>
+                                                        </div>
+                                                    }
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+                                </article>
+                            }
+                        </div>
+                    }
+                </section>
+            </div>
+        </div>
+
+        <div class="col-xxl-3 col-xl-4">
+            <div class="card generation-panel sticky-top" style="top: 5.5rem;">
+                <div class="card-body">
+                    <h2 class="h4">Generation Settings</h2>
+                    <p class="text-muted small">
+                        Choose the files Schema Architect should create from the parsed schema.
+                    </p>
+
+                    <form method="post" asp-page-handler="Generate">
+                        <input type="hidden" asp-for="Id" />
+                        <input type="hidden" asp-for="SelectedTableIndex" data-selected-table-input />
+                        <div asp-validation-summary="All" class="text-danger"></div>
+
+                        <div class="mb-3">
+                            <label asp-for="Options.RootNamespace" class="form-label">Root namespace</label>
+                            <input asp-for="Options.RootNamespace" class="form-control" />
+                            <span asp-validation-for="Options.RootNamespace" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Options.DbContextName" class="form-label">DbContext name</label>
+                            <input asp-for="Options.DbContextName" class="form-control" />
+                            <span asp-validation-for="Options.DbContextName" class="text-danger"></span>
+                        </div>
+
+                        <div class="form-check">
+                            <input asp-for="Options.GenerateEntities" class="form-check-input" />
+                            <label asp-for="Options.GenerateEntities" class="form-check-label">Entities</label>
+                        </div>
+                        <div class="form-check">
+                            <input asp-for="Options.GenerateDbContext" class="form-check-input" />
+                            <label asp-for="Options.GenerateDbContext" class="form-check-label">DbContext</label>
+                        </div>
+                        <div class="form-check">
+                            <input asp-for="Options.GenerateConfigurations" class="form-check-input" />
+                            <label asp-for="Options.GenerateConfigurations" class="form-check-label">Fluent API configurations</label>
+                        </div>
+                        <div class="form-check">
+                            <input asp-for="Options.GenerateDtos" class="form-check-input" />
+                            <label asp-for="Options.GenerateDtos" class="form-check-label">DTOs</label>
+                        </div>
+                        <div class="form-check">
+                            <input asp-for="Options.GenerateControllers" class="form-check-input" />
+                            <label asp-for="Options.GenerateControllers" class="form-check-label">Controllers</label>
+                        </div>
+                        <div class="form-check mb-3">
+                            <input asp-for="Options.GenerateMigrationInstructions" class="form-check-input" />
+                            <label asp-for="Options.GenerateMigrationInstructions" class="form-check-label">Migration instructions</label>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary btn-lg w-100 mt-3">Generate EF Core Code</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        (() => {
+            const explorer = document.querySelector('[data-schema-explorer]');
+            if (!explorer) {
+                return;
+            }
+
+            const selectors = Array.from(explorer.querySelectorAll('[data-table-selector]'));
+            const details = Array.from(explorer.querySelectorAll('[data-table-detail]'));
+            const selectedInput = document.querySelector('[data-selected-table-input]');
+            const searchInput = explorer.querySelector('[data-schema-search]');
+
+            const activateTable = (tableIndex) => {
+                selectors.forEach((selector) => {
+                    const isActive = selector.dataset.tableIndex === tableIndex;
+                    selector.classList.toggle('active', isActive);
+                    selector.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+                });
+
+                details.forEach((detail) => {
+                    const isActive = detail.dataset.tableIndex === tableIndex;
+                    detail.hidden = !isActive;
+                    detail.classList.toggle('active', isActive);
+                });
+
+                if (selectedInput) {
+                    selectedInput.value = tableIndex;
+                }
+            };
+
+            selectors.forEach((selector) => {
+                selector.addEventListener('click', () => activateTable(selector.dataset.tableIndex));
+            });
+
+            if (searchInput) {
+                searchInput.addEventListener('input', () => {
+                    const query = searchInput.value.trim().toLowerCase();
+
+                    explorer.querySelectorAll('[data-schema-group]').forEach((group) => {
+                        let visibleCount = 0;
+
+                        group.querySelectorAll('[data-table-selector]').forEach((selector) => {
+                            const haystack = `${selector.dataset.tableSchema} ${selector.dataset.tableName}`.toLowerCase();
+                            const isVisible = haystack.includes(query);
+                            selector.hidden = !isVisible;
+                            visibleCount += isVisible ? 1 : 0;
+                        });
+
+                        group.hidden = visibleCount === 0;
+                        if (query.length > 0 && visibleCount > 0) {
+                            group.open = true;
+                        }
+                    });
+                });
+            }
+        })();
+    </script>
+}
+
+@functions {
+    private static string GetColumnKindIcon(ColumnSchema column, bool isForeignKey)
+    {
+        if (column.IsPrimaryKey)
+        {
+            return "PK";
+        }
+
+        if (isForeignKey)
+        {
+            return "FK";
+        }
+
+        if (column.IsString)
+        {
+            return "T";
+        }
+
+        if (column.CSharpType.Contains("Date", StringComparison.OrdinalIgnoreCase) ||
+            column.CSharpType.Contains("Time", StringComparison.OrdinalIgnoreCase))
+        {
+            return "D";
+        }
+
+        if (column.CSharpType.StartsWith("bool", StringComparison.OrdinalIgnoreCase))
+        {
+            return "B";
+        }
+
+        return column.IsValueType ? "#" : "•";
+    }
+
+    private static string GetColumnKindLabel(ColumnSchema column, bool isForeignKey)
+    {
+        if (column.IsPrimaryKey)
+        {
+            return "Primary key column";
+        }
+
+        if (isForeignKey)
+        {
+            return "Foreign key column";
+        }
+
+        if (column.IsString)
+        {
+            return "Text column";
+        }
+
+        if (column.CSharpType.Contains("Date", StringComparison.OrdinalIgnoreCase) ||
+            column.CSharpType.Contains("Time", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Date or time column";
+        }
+
+        if (column.CSharpType.StartsWith("bool", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Boolean column";
+        }
+
+        return column.IsValueType ? "Numeric or value column" : "Column";
+    }
+
+    private static string GetHealthBadgeClass(SchemaHealthSeverity severity)
+    {
+        return severity switch
+        {
+            SchemaHealthSeverity.Ready => "schema-health-badge-ready",
+            SchemaHealthSeverity.Warning => "schema-health-badge-warning",
+            SchemaHealthSeverity.Issue => "schema-health-badge-issue",
+            _ => "schema-health-badge-warning",
+        };
+    }
+
+    private static string GetHealthItemClass(SchemaHealthSeverity severity)
+    {
+        return severity switch
+        {
+            SchemaHealthSeverity.Ready => "schema-health-item-ready",
+            SchemaHealthSeverity.Warning => "schema-health-item-warning",
+            SchemaHealthSeverity.Issue => "schema-health-item-issue",
+            _ => "schema-health-item-warning",
+        };
+    }
+}

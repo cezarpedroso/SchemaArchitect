@@ -1,0 +1,62 @@
+﻿@page
+@{
+    ViewData["Title"] = "Features";
+}
+
+<section class="hero-panel hero-shell mb-5">
+    <div class="row align-items-center g-4">
+        <div class="col-lg-8">
+            <span class="section-eyebrow">Features</span>
+            <h1 class="display-6 fw-semibold mt-3">A focused workflow for turning SQL DDL into EF Core starter code.</h1>
+            <p class="lead text-muted mb-0">
+                Schema Architect parses relational schema files, gives you a reviewable model,
+                then generates the C# layers most teams end up scaffolding by hand.
+            </p>
+        </div>
+    </div>
+</section>
+
+<section class="row g-4">
+    <div class="col-md-6 col-xl-3">
+        <div class="feature-tile">
+            <span class="section-eyebrow">Parse</span>
+            <h2 class="h5">Multi-dialect schema parsing</h2>
+            <p class="text-muted mb-0">
+                Reads tables, columns, keys, nullability, lengths, precision, scale, identity fields,
+                and relationships across the supported SQL dialects.
+            </p>
+        </div>
+    </div>
+
+    <div class="col-md-6 col-xl-3">
+        <div class="feature-tile">
+            <span class="section-eyebrow">Model</span>
+            <h2 class="h5">Reviewable schema model</h2>
+            <p class="text-muted mb-0">
+                Inspect the detected structure before generation, with clear markers for required fields,
+                primary keys, identity columns, and foreign keys.
+            </p>
+        </div>
+    </div>
+
+    <div class="col-md-6 col-xl-3">
+        <div class="feature-tile">
+            <span class="section-eyebrow">Generate</span>
+            <h2 class="h5">EF Core-oriented output</h2>
+            <p class="text-muted mb-0">
+                Generates entities, DbContext, Fluent API configurations, DTOs, controllers,
+                and migration notes in a clean project structure.
+            </p>
+        </div>
+    </div>
+
+    <div class="col-md-6 col-xl-3">
+        <div class="feature-tile">
+            <span class="section-eyebrow">Export</span>
+            <h2 class="h5">Preview and export</h2>
+            <p class="text-muted mb-0">
+                Browse generated files in the app and export the full output as a ZIP when you are ready to use it.
+            </p>
+        </div>
+    </div>
+</section>

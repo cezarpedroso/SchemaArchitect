@@ -1,0 +1,28 @@
+﻿@page
+@model ErrorModel
+@{
+    ViewData["Title"] = "Something went wrong";
+}
+
+<section class="hero-panel rounded-4 p-4 p-lg-5">
+    <div class="row align-items-center g-4">
+        <div class="col-lg-8">
+            <span class="badge text-bg-secondary mb-3">Request interrupted</span>
+            <h1 class="display-6 fw-semibold">Something went wrong while processing the schema.</h1>
+            <p class="lead text-muted">
+                Schema Architect could not complete the current request. Return to the upload flow and try again
+                with a schema file containing <code>CREATE TABLE</code> definitions.
+            </p>
+
+            @if (Model.ShowRequestId)
+            {
+                <p class="text-muted">
+                    Reference ID:
+                    <code>@Model.RequestId</code>
+                </p>
+            }
+
+            <a asp-page="/Upload/Index" class="btn btn-primary">Upload schema</a>
+        </div>
+    </div>
+</section>

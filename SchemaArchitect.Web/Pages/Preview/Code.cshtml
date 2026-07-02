@@ -1,0 +1,111 @@
+@page
+@model SchemaArchitect.Web.Pages.Preview.CodeModel
+@{
+    ViewData["Title"] = "Generated code";
+}
+
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+    <div>
+        <span class="section-eyebrow">Step 3 of 3</span>
+        <h1 class="h2 mt-2 mb-1">Generated Code</h1>
+        <p class="text-muted mb-0">Review generated files, edit anything you want, and export the complete code package.</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a asp-page="/Preview/Index" asp-route-id="@Model.Id" class="btn btn-outline-secondary">Back to schema</a>
+        <a asp-page-handler="Download" asp-route-id="@Model.Id" class="btn btn-primary">Download ZIP</a>
+    </div>
+</div>
+
+@if (!string.IsNullOrWhiteSpace(Model.StatusMessage))
+{
+    <p class="status-message-success" role="status">@Model.StatusMessage</p>
+}
+
+@if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+{
+    <div class="alert alert-danger" role="alert">@Model.ErrorMessage</div>
+}
+
+<div class="row g-4 code-workbench">
+    <div class="col-lg-3">
+        <div class="card explorer-panel">
+            <div class="card-header">
+                <span class="section-eyebrow">Explorer</span>
+                <span class="badge text-bg-secondary ms-1">@Model.Files.Count</span>
+            </div>
+            <div class="list-group list-group-flush">
+                @foreach (var file in Model.Files)
+                {
+                    <a asp-page="/Preview/Code"
+                       asp-route-id="@Model.Id"
+                       asp-route-selectedFileIndex="@file.Index"
+                       class="list-group-item list-group-item-action @(Model.SelectedFileIndex == file.Index ? "active" : string.Empty)">
+                        <span class="d-flex align-items-start justify-content-between gap-2">
+                            <code class="@(Model.SelectedFileIndex == file.Index ? "text-white" : string.Empty)">@file.RelativePath</code>
+                            @if (file.IsEdited)
+                            {
+                                <span class="badge text-bg-success generated-file-status">Edited</span>
+                            }
+                        </span>
+                    </a>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-9">
+        @if (Model.SelectedFile is not null)
+        {
+            <form method="post"
+                  asp-page-handler="Restore"
+                  asp-route-id="@Model.Id"
+                  asp-route-selectedFileIndex="@Model.SelectedFileIndex"
+                  id="restore-file-form"></form>
+
+            <form method="post"
+                  asp-page-handler="Save"
+                  asp-route-id="@Model.Id"
+                  asp-route-selectedFileIndex="@Model.SelectedFileIndex"
+                  class="editable-code-form">
+                <div class="card editor-panel">
+                    <div class="card-header d-flex flex-wrap align-items-center justify-content-between gap-2">
+                        <div>
+                            <strong class="text-break">@Model.SelectedFile.RelativePath</strong>
+                            <div class="editor-hint">Edit this file, save changes, or restore the original generated version.</div>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            @if (Model.SelectedFileIsEdited)
+                            {
+                                <span class="badge text-bg-success">Edited</span>
+                            }
+                            else
+                            {
+                                <span class="badge text-bg-secondary">Generated</span>
+                            }
+                            <span class="badge text-bg-secondary">@Model.CodeLanguageClass.Replace("language-", string.Empty)</span>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <textarea asp-for="EditedContent"
+                                  class="code-editor"
+                                  spellcheck="false"
+                                  autocomplete="off"
+                                  autocapitalize="off"
+                                  aria-label="Editable generated code for @Model.SelectedFile.RelativePath"></textarea>
+                    </div>
+                    <div class="card-footer d-flex flex-wrap align-items-center justify-content-between gap-2">
+                        <span>@(Model.SelectedFileIsEdited ? "Saved edits are included in the ZIP." : "This file matches the original generated version.")</span>
+                        <div class="d-flex flex-wrap gap-2">
+                            <button type="submit"
+                                    form="restore-file-form"
+                                    class="btn btn-outline-secondary">
+                                Restore original
+                            </button>
+                            <button type="submit" class="btn btn-primary">Save changes</button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        }
+    </div>
+</div>

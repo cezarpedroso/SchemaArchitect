@@ -1,0 +1,64 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Schema Architect</title>
+    <script type="importmap"></script>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/SchemaArchitect.Web.styles.css" asp-append-version="true" />
+</head>
+<body>
+    <header>    
+        <nav class="navbar navbar-expand-sm navbar-toggleable-sm app-navbar">
+            <div class="container-fluid px-3 px-lg-4">
+                <a class="navbar-brand" asp-area="" asp-page="/Index" aria-label="Schema Architect home">
+                    <img class="navbar-logo" src="~/images/schema-architect-logo.png" asp-append-version="true" alt="Schema Architect" />
+                </a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
+                        aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-center">
+                    <ul class="navbar-nav align-items-sm-center">
+                        <li class="nav-item">
+                            <a class="nav-link" asp-area="" asp-page="/Index">Home</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" asp-area="" asp-page="/Features">Features</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="btn btn-primary btn-sm nav-cta" asp-area="" asp-page="/Upload/Index">
+                                <svg class="nav-cta-icon" aria-hidden="true" viewBox="0 0 20 20" focusable="false">
+                                    <path d="M10 3.25a.75.75 0 0 1 .53.22l3.25 3.25a.75.75 0 0 1-1.06 1.06l-1.97-1.97v7.44a.75.75 0 0 1-1.5 0V5.81L7.28 7.78a.75.75 0 0 1-1.06-1.06l3.25-3.25a.75.75 0 0 1 .53-.22Z" />
+                                    <path d="M4.75 12.5a.75.75 0 0 1 .75.75v1.5h9v-1.5a.75.75 0 0 1 1.5 0v2.25a.75.75 0 0 1-.75.75H4.75A.75.75 0 0 1 4 15.5v-2.25a.75.75 0 0 1 .75-.75Z" />
+                                </svg>
+                                <span>Upload Schema</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+    </header>
+    <div class="container app-main">
+        <main role="main" class="pb-3">
+            @RenderBody()
+        </main>
+    </div>
+
+    <footer class="footer">
+        <div class="container-fluid px-3 px-lg-4 d-flex flex-wrap align-items-center justify-content-between gap-2">
+            <span>&copy; 2026 Schema Architect</span>
+            <span class="footer-meta">Multi-dialect schema intelligence for EF Core teams</span>
+        </div>
+    </footer>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>
