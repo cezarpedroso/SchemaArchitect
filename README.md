@@ -85,10 +85,6 @@ Schema Architect automates these repetitive tasks so developers can spend less t
 
 ---
 
-## Screenshots
-
-> Screenshots coming soon.
-
 ### Home
 ![home](docs/images/homepage.png)
 
@@ -119,3 +115,8 @@ SchemaArchitect
 │   └── ViewModels
 ├── SchemaArchitect.Tests
 └── samples
+```
+---
+## Notes
+
+If you have questions, suggestions, or would like to contribute, feel free to open an issue or submit a pull request.
